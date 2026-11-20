@@ -1,0 +1,51 @@
+name: Claude 사용량 수집
+
+on:
+  schedule:
+    # 깃허브 예약은 UTC 기준입니다. 아래는 한국 시간 08:07, 12:07, 17:07, 22:07 입니다.
+    - cron: "7 23,3,8,13 * * *"
+    # 주간 한도가 월요일 06:00(한국 시간)에 리셋되므로, 그 직전인 월요일 05:17 에 한 번 더 읽어
+    # 그 주의 최종 사용률을 남깁니다. (UTC 로는 일요일 20:17)
+    - cron: "17 20 * * 0"
+  workflow_dispatch: # Actions 탭에서 수동으로도 실행할 수 있습니다.
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-usage
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Claude Code 설치
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: 사용률 읽기
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          # 한 단어짜리 호출을 한 번 보내고, 함께 나오는 사용률만 꺼냅니다.
+          # 원본 출력은 로그에 찍지 않습니다(공개 저장소의 로그는 누구나 볼 수 있습니다).
+          claude -p "Reply with the single word: done" \
+            --model haiku --max-turns 1 \
+            --output-format stream-json --verbose \
+            > "$RUNNER_TEMP/out.jsonl" 2> "$RUNNER_TEMP/err.txt" || true
+          python3 scripts/collect_usage.py "$RUNNER_TEMP/out.jsonl" data
+
+      - name: 기록 저장
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          git diff --cached --quiet || git commit -m "usage: $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push
