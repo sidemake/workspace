@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>workspace</title>
+<meta name="theme-color" content="#f4f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#11231c" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* 업무수첩에서 가져온 색: 밝은 화면은 속지, 어두운 화면은 진녹색 표지 */
+  :root {
+    color-scheme: light;
+    --paper: #f4f6f2;
+    --ink: #15221c;
+    --ink-2: #47554e;
+    --ink-3: #62726a;
+    --rule: #dce2dc;
+    --rule-strong: #b9c4bc;
+    --accent: #087a52;
+    --accent-track: #cfe3d9;
+    --on-accent: #ffffff;
+    --mark: #087a52;
+    --up: #c2302e;
+    --down: #1d5fb3;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --tip-bg: #15221c;
+    --tip-ink: #f4f6f2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --paper: #11231c;
+      --ink: #e8efe9;
+      --ink-2: #b4c2ba;
+      --ink-3: #8a9a92;
+      --rule: #223a30;
+      --rule-strong: #35554a;
+      --accent: #32ab81;
+      --accent-track: #1d4637;
+      --on-accent: #0b1a14;
+      --mark: #c9a85c;
+      --up: #f08a86;
+      --down: #86b8f2;
+      --warn: #fab219;
+      --crit: #e66767;
+      --tip-bg: #e8efe9;
+      --tip-ink: #11231c;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans KR", system-ui, -apple-system, "Segoe UI", "Noto Sans KR", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+  .page {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top)) 20px calc(40px + env(safe-area-inset-bottom));
+  }
+
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 44px;
+  }
+  .wordmark { font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--mark); }
+  .refresh {
+    background: none; border: 0; padding: 10px 0 10px 16px;
+    font-size: 13px; color: var(--ink-3);
+  }
+
+  h1 { font-size: 32px; line-height: 1.2; font-weight: 600; margin: 20px 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 20px; line-height: 1.3; font-weight: 600; margin: 0; }
+  h3 { font-size: 14px; font-weight: 500; color: var(--ink-2); margin: 0; }
+  .lede { margin: 0 0 16px; color: var(--ink-2); }
+  .section { margin-top: 48px; }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+  .asof { font-size: 13px; color: var(--ink-3); text-align: right; }
+  .note { font-size: 14px; color: var(--ink-2); margin: 8px 0 0; }
+  .muted { color: var(--ink-3); }
+
+  /* 할 일: 줄 쳐진 수첩 */
+  .tasks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
+  .task { display: flex; align-items: center; min-height: 52px; border-bottom: 1px solid var(--rule); }
+  .check {
+    flex: none; width: 44px; height: 52px; margin-left: -10px;
+    background: none; border: 0; padding: 0;
+    display: grid; place-items: center;
+  }
+  .check-ring {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1.5px solid var(--ink-3);
+    display: grid; place-items: center;
+  }
+  .check-ring svg { width: 12px; height: 12px; opacity: 0; }
+  .task.done .check-ring { background: var(--accent); border-color: var(--accent); }
+  .task.done .check-ring svg { opacity: 1; }
+  .task-text { flex: 1; min-width: 0; padding: 12px 0; overflow-wrap: anywhere; }
+  .task.done .task-text { color: var(--ink-3); text-decoration: line-through; }
+  .carried { flex: none; font-size: 12px; color: var(--ink-3); margin-left: 8px; white-space: nowrap; }
+  .del {
+    flex: none; width: 40px; height: 52px; margin-right: -12px;
+    background: none; border: 0; padding: 0; color: var(--ink-3);
+    display: grid; place-items: center;
+  }
+  .del svg { width: 14px; height: 14px; }
+  .add { display: flex; align-items: center; border-bottom: 1px solid var(--rule-strong); }
+  .add input {
+    flex: 1; min-width: 0; height: 52px; padding: 0;
+    background: none; border: 0; outline: none;
+  }
+  .add input::placeholder { color: var(--ink-3); }
+  .add button {
+    flex: none; height: 36px; padding: 0 14px;
+    background: var(--accent); color: var(--on-accent);
+    border: 0; border-radius: 18px; font-size: 14px; font-weight: 500;
+  }
+  .add:focus-within { border-bottom-color: var(--accent); }
+
+  /* 사용량 */
+  .week-figure { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
+  .hero { font-size: 56px; line-height: 1; font-weight: 600; letter-spacing: -0.02em; }
+  .verdict { font-size: 15px; color: var(--ink-2); }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; margin-top: 8px; }
+  .status svg { width: 16px; height: 16px; flex: none; }
+  .status.warn svg { color: var(--warn); }
+  .status.crit svg { color: var(--crit); }
+
+  .ruler { position: relative; margin-top: 30px; }
+  .ruler-track { height: 12px; border-radius: 6px; background: var(--accent-track); overflow: hidden; }
+  .ruler-fill { height: 100%; width: 0; background: var(--accent); border-radius: 6px; transition: width 0.7s cubic-bezier(.2,.7,.2,1); }
+  .ruler-fill.warn { background: var(--warn); }
+  .ruler-fill.crit { background: var(--crit); }
+  .now { position: absolute; top: -8px; height: 28px; width: 2px; margin-left: -1px; background: var(--ink); border-radius: 1px; }
+  .now-label { position: absolute; top: -27px; transform: translateX(-50%); font-size: 12px; color: var(--ink-2); white-space: nowrap; }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 6px; }
+  .days span { font-size: 12px; color: var(--ink-3); text-align: center; border-left: 1px solid var(--rule); }
+  .days span:last-child { border-right: 1px solid var(--rule); }
+  .days span.today { color: var(--ink); font-weight: 600; }
+
+  .session { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--rule); }
+  .session-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .session-value { font-size: 24px; font-weight: 600; line-height: 1.2; }
+  .thin-track { height: 8px; border-radius: 4px; background: var(--accent-track); overflow: hidden; margin-top: 8px; }
+  .thin-fill { height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width 0.7s cubic-bezier(.2,.7,.2,1); }
+  .thin-fill.warn { background: var(--warn); }
+  .thin-fill.crit { background: var(--crit); }
+
+  .chart-block { margin-top: 32px; }
+  .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; font-size: 12px; color: var(--ink-2); flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .key-line { width: 14px; height: 2px; border-radius: 1px; background: var(--accent); }
+  .key-line.pace { background: var(--ink-3); }
+  .key-box { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); }
+  .key-box.open { background: var(--accent-track); }
+  .chart { position: relative; margin-top: 8px; }
+  .chart svg { display: block; width: 100%; touch-action: pan-y; }
+  .chart svg:focus-visible { outline-offset: 4px; }
+  .grid { stroke: var(--rule); stroke-width: 1; }
+  .axis { stroke: var(--rule-strong); stroke-width: 1; }
+  .tick-text { font-size: 11px; fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .value-text { font-size: 12px; font-weight: 600; fill: var(--ink); }
+  .pace-line { stroke: var(--ink-3); stroke-width: 2; stroke-linecap: round; fill: none; opacity: 0.55; }
+  .use-line { stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; }
+  .use-dot { fill: var(--accent); stroke: var(--paper); stroke-width: 2; }
+  .cross { stroke: var(--ink-2); stroke-width: 1; }
+  .bar { fill: var(--accent); }
+  .bar.open { fill: var(--accent-track); }
+  .bar-hit { fill: transparent; }
+  .bar-hit:focus-visible { outline: 2px solid var(--accent); }
+  .tip {
+    position: absolute; top: 0; left: 0; pointer-events: none;
+    background: var(--tip-bg); color: var(--tip-ink);
+    border-radius: 6px; padding: 6px 10px; font-size: 12px; line-height: 1.4;
+    white-space: nowrap; opacity: 0; transition: opacity 0.12s;
+    z-index: 2;
+  }
+  .tip.show { opacity: 1; }
+  .tip strong { font-size: 14px; font-weight: 600; display: block; }
+
+  details { margin-top: 10px; }
+  summary { font-size: 13px; color: var(--ink-2); padding: 8px 0; cursor: pointer; width: fit-content; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 7px 0; border-bottom: 1px solid var(--rule); font-weight: 400; }
+  th { color: var(--ink-3); font-size: 12px; }
+  th:first-child, td:first-child { text-align: left; }
+
+  /* 주식 */
+  .stocks { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule-strong); }
+  .stock a {
+    display: grid; grid-template-columns: 1fr auto; column-gap: 12px; align-items: center;
+    min-height: 60px; padding: 8px 0; border-bottom: 1px solid var(--rule);
+    color: inherit; text-decoration: none;
+  }
+  .stock-name { font-weight: 500; }
+  .stock-code { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  .stock-quote { text-align: right; font-variant-numeric: tabular-nums; }
+  .stock-price { font-weight: 600; }
+  .stock-delta { font-size: 13px; }
+  .stock-delta.up { color: var(--up); }
+  .stock-delta.down { color: var(--down); }
+  .stock-delta.flat { color: var(--ink-3); }
+
+  .foot { margin-top: 48px; font-size: 12px; color: var(--ink-3); }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 12px);
+    background: var(--tip-bg); color: var(--tip-ink);
+    border-radius: 22px; padding: 4px 6px 4px 16px; font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+    z-index: 5; white-space: nowrap;
+  }
+  .toast.show { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
+  .toast button { background: none; border: 0; color: inherit; font-weight: 600; padding: 8px 12px; text-decoration: underline; text-underline-offset: 3px; }
+
+  @media (min-width: 900px) {
+    .page { max-width: 1040px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 72px; align-items: start; }
+    .top { grid-column: 1 / -1; }
+    .col-right .section:first-child { margin-top: 20px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ruler-fill, .thin-fill, .tip, .toast { transition: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <span class="wordmark">workspace</span>
+    <button class="refresh" id="refresh" type="button">새로 고침</button>
+  </header>
+
+  <div class="col-left">
+    <section aria-labelledby="today">
+      <h1 id="today"></h1>
+      <p class="lede" id="task-summary"></p>
+      <ul class="tasks" id="tasks"></ul>
+      <form class="add" id="add-form" autocomplete="off">
+        <input id="add-input" type="text" placeholder="할 일 적기" aria-label="새 할 일" maxlength="120" enterkeyhint="done">
+        <button type="submit">추가</button>
+      </form>
+      <p class="note" id="storage-note" hidden>이 브라우저에서는 저장할 수 없어, 창을 닫으면 할 일이 사라집니다.</p>
+    </section>
+  </div>
+
+  <div class="col-right">
+    <section class="section" aria-labelledby="usage-title">
+      <div class="section-head">
+        <h2 id="usage-title">Claude 사용량</h2>
+        <span class="asof" id="usage-asof"></span>
+      </div>
+      <div id="usage-body">
+        <p class="note">사용량 기록을 불러오는 중입니다.</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="stocks-title">
+      <div class="section-head">
+        <h2 id="stocks-title">주식</h2>
+        <span class="asof" id="stocks-asof"></span>
+      </div>
+      <ul class="stocks" id="stocks"></ul>
+      <p class="note" id="stocks-note" hidden></p>
+    </section>
+
+    <p class="foot">할 일은 이 기기에만 저장됩니다. 사용량과 주가는 저장소에 쌓인 수집 기록을 읽어 옵니다.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status">
+  <span id="toast-text"></span>
+  <button type="button" id="toast-undo">되돌리기</button>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const HOUR = 3600e3, DAY = 24 * HOUR, WEEK = 7 * DAY;
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+
+  /* ---------- 한국 시간 표기 ---------- */
+  const fmt = (opts) => new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', ...opts });
+  const partsOf = (d, opts) => Object.fromEntries(fmt(opts).formatToParts(d).map((p) => [p.type, p.value]));
+  const hhmm = (d) => { const p = partsOf(d, { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); return `${p.hour}:${p.minute}`; };
+  const mmdd = (d) => { const p = partsOf(d, { month: 'numeric', day: 'numeric' }); return `${p.month}.${p.day}`; };
+  const weekdayShort = (d) => fmt({ weekday: 'short' }).format(d);
+  const weekdayLong = (d) => fmt({ weekday: 'long' }).format(d);
+  const dayKey = (d) => { const p = partsOf(d, { year: 'numeric', month: '2-digit', day: '2-digit' }); return `${p.year}-${p.month}-${p.day}`; };
+  const dayNumber = (key) => Math.round(Date.parse(key + 'T00:00:00Z') / DAY);
+  function whenText(d, now = new Date()) {
+    const diff = dayNumber(dayKey(d)) - dayNumber(dayKey(now));
+    const day = diff === 0 ? '오늘' : diff === 1 ? '내일' : diff === -1 ? '어제' : `${weekdayLong(d)}`;
+    return `${day} ${hhmm(d)}`;
+  }
+  const pct = (v) => `${Math.round(v)}%`;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function h(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (v == null || v === false) continue;
+      if (k === 'class') node.className = v; else if (k === 'text') node.textContent = v; else node.setAttribute(k, v === true ? '' : v);
+    }
+    for (const c of children) if (c != null) node.append(c);
+    return node;
+  }
+  function s(tag, attrs = {}, text) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    if (text != null) node.textContent = text;
+    return node;
+  }
+  function icon(pathD, viewBox = '0 0 16 16') {
+    const svg = s('svg', { viewBox, 'aria-hidden': 'true' });
+    svg.append(s('path', { d: pathD, fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    return svg;
+  }
+  function alertIcon() {
+    const svg = s('svg', { viewBox: '0 0 16 16', 'aria-hidden': 'true' });
+    svg.append(s('path', { d: 'M8 1.5 15 14H1z', fill: 'currentColor' }));
+    svg.append(s('path', { d: 'M8 6v4M8 12v.2', stroke: '#15221c', 'stroke-width': '1.6', 'stroke-linecap': 'round', fill: 'none' }));
+    return svg;
+  }
+
+  /* ================= 할 일 ================= */
+  const KEY = 'workspace.tasks.v1';
+  let tasks = [];
+  let canStore = true;
+  let currentDay = dayKey(new Date());
+
+  function readTasks() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      const list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list.filter((t) => t && typeof t.text === 'string') : [];
+    } catch (e) { canStore = false; return []; }
+  }
+  function writeTasks() {
+    try { localStorage.setItem(KEY, JSON.stringify(tasks)); }
+    catch (e) { canStore = false; }
+    $('#storage-note').hidden = canStore;
+  }
+  // 날짜가 바뀌면 끝낸 일은 걷어 내고, 못 끝낸 일은 오늘로 넘긴다.
+  function rollOver() {
+    const today = dayKey(new Date());
+    const before = tasks.length;
+    tasks = tasks.filter((t) => !(t.done && t.doneDay && t.doneDay < today));
+    if (tasks.length !== before) writeTasks();
+    currentDay = today;
+  }
+  function renderToday() {
+    const now = new Date();
+    const p = partsOf(now, { month: 'numeric', day: 'numeric' });
+    $('#today').textContent = `${p.month}월 ${p.day}일 ${weekdayLong(now)}`;
+  }
+  function renderTasks() {
+    const list = $('#tasks');
+    list.textContent = '';
+    const today = currentDay;
+    const ordered = [...tasks.filter((t) => !t.done), ...tasks.filter((t) => t.done)];
+    for (const t of ordered) {
+      const ring = h('span', { class: 'check-ring' });
+      ring.append(icon('M3 8.5 6.5 12 13 4.5'));
+      ring.firstChild.style.color = 'var(--on-accent)';
+      const check = h('button', { class: 'check', type: 'button', 'aria-pressed': String(!!t.done), 'aria-label': t.done ? `끝냄 취소: ${t.text}` : `끝냄으로 표시: ${t.text}` }, ring);
+      check.addEventListener('click', () => toggleTask(t.id));
+      const row = h('li', { class: 'task' + (t.done ? ' done' : '') }, check, h('span', { class: 'task-text', text: t.text }));
+      const age = t.created ? dayNumber(today) - dayNumber(t.created) : 0;
+      if (!t.done && age >= 1) row.append(h('span', { class: 'carried', text: age === 1 ? '어제부터' : `${age + 1}일째` }));
+      const del = h('button', { class: 'del', type: 'button', 'aria-label': `지우기: ${t.text}` }, icon('M3.5 3.5l9 9M12.5 3.5l-9 9'));
+      del.addEventListener('click', () => deleteTask(t.id));
+      row.append(del);
+      list.append(row);
+    }
+    const total = tasks.length, done = tasks.filter((t) => t.done).length;
+    $('#task-summary').textContent =
+      total === 0 ? '오늘 할 일을 적어 보세요.'
+      : done === total ? `오늘 할 일 ${total}개를 모두 끝냈습니다.`
+      : done === 0 ? `오늘 할 일이 ${total}개 있습니다.`
+      : `할 일 ${total}개 중 ${done}개를 끝냈습니다.`;
+  }
+  function addTask(text) {
+    tasks.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), text, done: false, created: dayKey(new Date()) });
+    writeTasks(); renderTasks();
+  }
+  function toggleTask(id) {
+    const t = tasks.find((x) => x.id === id);
+    if (!t) return;
+    t.done = !t.done;
+    t.doneDay = t.done ? dayKey(new Date()) : null;
+    writeTasks(); renderTasks();
+  }
+  let lastDeleted = null, toastTimer = null;
+  function deleteTask(id) {
+    const index = tasks.findIndex((x) => x.id === id);
+    if (index < 0) return;
+    lastDeleted = { task: tasks[index], index };
+    tasks.splice(index, 1);
+    writeTasks(); renderTasks();
+    $('#toast-text').textContent = '할 일을 지웠습니다.';
+    $('#toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, 5000);
+  }
+  function hideToast() { $('#toast').classList.remove('show'); lastDeleted = null; }
+  $('#toast-undo').addEventListener('click', () => {
+    if (lastDeleted) { tasks.splice(Math.min(lastDeleted.index, tasks.length), 0, lastDeleted.task); writeTasks(); renderTasks(); }
+    clearTimeout(toastTimer); hideToast();
+  });
+  $('#add-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = $('#add-input');
+    const text = input.value.trim();
+    if (text) addTask(text);
+    input.value = '';
+  });
+
+  /* ================= 데이터 읽기 ================= */
+  // 깃허브 페이지에서 열렸으면 저장소의 최신 파일을 직접 읽고, 안 되면 페이지와 함께 배포된 파일을 읽는다.
+  function sources(name) {
+    const bucket = Math.floor(Date.now() / 120000);
+    const urls = [];
+    const host = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const repo = location.pathname.split('/').filter(Boolean)[0];
+    if (host && repo) urls.push(`https://raw.githubusercontent.com/${host[1]}/${repo}/main/data/${name}?v=${bucket}`);
+    urls.push(`data/${name}?v=${bucket}`);
+    return urls;
+  }
+  async function loadJson(name) {
+    for (const url of sources(name)) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) return await res.json();
+      } catch (e) { /* 다음 주소로 */ }
+    }
+    return null;
+  }
+
+  /* ================= 차트 공통: 말풍선 ================= */
+  function makeTip(host) {
+    const tip = h('div', { class: 'tip', role: 'presentation' });
+    host.append(tip);
+    return {
+      show(x, y, value, label) {
+        tip.textContent = '';
+        tip.append(h('strong', { text: value }), document.createTextNode(label));
+        tip.classList.add('show');
+        const w = tip.offsetWidth, hostW = host.clientWidth;
+        tip.style.left = `${clamp(x - w / 2, 0, hostW - w)}px`;
+        tip.style.top = `${Math.max(0, y - tip.offsetHeight - 10)}px`;
+      },
+      hide() { tip.classList.remove('show'); },
+    };
+  }
+
+  /* ================= 사용량 ================= */
+  let usage = null, weekly = null, stocks = null, firstPaint = true;
+  const sameWeek = (a, b) => Math.abs(new Date(a) - new Date(b)) <= HOUR;
+
+  function statusLine(level, text) {
+    const node = h('div', { class: `status ${level}` });
+    node.append(alertIcon(), h('span', { text }));
+    return node;
+  }
+  function severity(v) { return v >= 95 ? 'crit' : v >= 80 ? 'warn' : ''; }
+
+  function renderUsage() {
+    const body = $('#usage-body');
+    const now = Date.now();
+    if (!usage || !usage.length) {
+      body.textContent = '';
+      body.append(h('p', { class: 'note', text: usage ? '아직 수집된 기록이 없습니다. 다음 수집 시각 이후에 표시됩니다.' : '사용량 기록을 불러오지 못했습니다. 잠시 뒤 새로 고침해 주세요.' }));
+      $('#usage-asof').textContent = '';
+      return;
+    }
+    const last = usage[usage.length - 1];
+    const asOf = new Date(last.t);
+    $('#usage-asof').textContent = `${whenText(asOf)} 기준`;
+    body.textContent = '';
+
+    if (now - asOf > 14 * HOUR) {
+      body.append(statusLine('warn', `마지막 수집이 ${Math.round((now - asOf) / HOUR)}시간 전입니다. 저장소의 Actions에서 수집이 멈췄는지 확인하세요.`));
+    }
+
+    /* ---- 이번 주 ---- */
+    const reset = last.seven_day_resets_at ? new Date(last.seven_day_resets_at) : null;
+    const weekBlock = h('div');
+    weekBlock.append(h('h3', { text: '이번 주' }));
+    if (!reset || last.seven_day_pct == null) {
+      weekBlock.append(h('p', { class: 'note', text: '주간 사용률이 이번 수집에는 실려 오지 않았습니다.' }));
+    } else if (now >= reset) {
+      weekBlock.append(h('p', { class: 'note', text: `주간 한도가 ${whenText(reset)}에 리셋됐습니다. 지난주는 ${pct(last.seven_day_pct)}로 마감했고, 새 값은 다음 수집 때 표시됩니다.` }));
+    } else {
+      const start = reset - WEEK;
+      const used = last.seven_day_pct;
+      const elapsedNow = clamp((now - start) / WEEK, 0, 1);
+      const elapsedRead = clamp((asOf - start) / WEEK, 0, 1);
+      const gap = used - elapsedRead * 100;
+      const verdict = elapsedRead < 0.05 ? '이번 주가 막 시작됐습니다'
+        : gap <= -5 ? '시간보다 덜 쓰는 중'
+        : gap >= 5 ? '시간보다 빨리 쓰는 중'
+        : '시간과 비슷한 속도';
+      weekBlock.append(h('div', { class: 'week-figure' }, h('span', { class: 'hero', text: pct(used) }), h('span', { class: 'verdict', text: verdict })));
+      const level = severity(used);
+      if (level) weekBlock.append(statusLine(level, level === 'crit' ? '주간 한도에 거의 닿았습니다' : '주간 한도의 80%를 넘었습니다'));
+
+      const fill = h('div', { class: `ruler-fill ${level}` });
+      const ruler = h('div', { class: 'ruler', role: 'img', 'aria-label': `주간 한도 ${pct(used)} 사용, 한 주의 ${pct(elapsedNow * 100)} 경과` },
+        h('span', { class: 'now-label', style: `left:${clamp(elapsedNow * 100, 4, 96)}%`, text: '지금' }),
+        h('div', { class: 'ruler-track' }, fill),
+        h('div', { class: 'now', style: `left:${elapsedNow * 100}%` }));
+      weekBlock.append(ruler);
+      const days = h('div', { class: 'days', 'aria-hidden': 'true' });
+      const todayIndex = Math.floor((now - start) / DAY);
+      for (let i = 0; i < 7; i++) days.append(h('span', { class: i === todayIndex ? 'today' : '', text: weekdayShort(new Date(start + i * DAY)) }));
+      weekBlock.append(days);
+      setFill(fill, used);
+
+      let outlook = `${whenText(reset)}에 리셋됩니다.`;
+      if (elapsedRead >= 0.1) {
+        const projected = used / elapsedRead;
+        outlook += projected > 100 ? ' 이 속도면 리셋 전에 한도에 닿습니다.' : ` 이 속도면 그때 약 ${pct(projected)}입니다.`;
+      }
+      weekBlock.append(h('p', { class: 'note', text: outlook }));
+    }
+    body.append(weekBlock);
+
+    /* ---- 지금 세션 ---- */
+    const sReset = last.five_hour_resets_at ? new Date(last.five_hour_resets_at) : null;
+    const session = h('div', { class: 'session' });
+    if (sReset && last.five_hour_pct != null && now < sReset) {
+      const level = severity(last.five_hour_pct);
+      const fill = h('div', { class: `thin-fill ${level}` });
+      session.append(
+        h('div', { class: 'session-row' }, h('h3', { text: '지금 세션 (5시간)' }), h('span', { class: 'session-value', text: pct(last.five_hour_pct) })),
+        h('div', { class: 'thin-track', role: 'img', 'aria-label': `5시간 세션 한도 ${pct(last.five_hour_pct)} 사용` }, fill),
+        h('p', { class: 'note', text: `${whenText(sReset)}에 리셋됩니다.` }));
+      if (level) session.append(statusLine(level, level === 'crit' ? '세션 한도에 거의 닿았습니다' : '세션 한도의 80%를 넘었습니다'));
+      setFill(fill, last.five_hour_pct);
+    } else {
+      session.append(h('h3', { text: '지금 세션 (5시간)' }),
+        h('p', { class: 'note', text: sReset ? `진행 중인 세션이 없습니다. 마지막 세션은 ${whenText(sReset)}에 끝났습니다.` : '진행 중인 세션이 없습니다.' }));
+    }
+    body.append(session);
+
+    /* ---- 이번 주 추이 ---- */
+    if (reset && now < reset) {
+      const points = usage.filter((r) => r.seven_day_resets_at && r.seven_day_pct != null && sameWeek(r.seven_day_resets_at, reset))
+        .map((r) => ({ t: +new Date(r.t), v: r.seven_day_pct, s: r.five_hour_pct }));
+      const block = h('div', { class: 'chart-block' });
+      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '이번 주 추이' }),
+        h('div', { class: 'legend' },
+          h('span', {}, h('i', { class: 'key-line' }), '주간 사용률'),
+          h('span', {}, h('i', { class: 'key-line pace' }), '고르게 쓸 때'))));
+      const host = h('div', { class: 'chart' });
+      block.append(host);
+      const table = h('table');
+      table.append(h('thead', {}, h('tr', {}, h('th', { text: '수집 시각' }), h('th', { text: '주간' }), h('th', { text: '세션' }))));
+      const tbody = h('tbody');
+      for (const p of [...points].reverse().slice(0, 40)) {
+        const d = new Date(p.t);
+        tbody.append(h('tr', {}, h('td', { text: `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}` }), h('td', { text: pct(p.v) }), h('td', { text: p.s == null ? '–' : pct(p.s) })));
+      }
+      table.append(tbody);
+      block.append(h('details', {}, h('summary', { text: '수집 기록 표로 보기' }), table));
+      body.append(block);
+      drawWeekLine(host, points, reset - WEEK, +reset);
+    }
+
+    /* ---- 주별 사용량 ---- */
+    const weeks = (weekly || []).filter((w) => w.week_resets_at && w.used_pct != null).slice(-8);
+    const block = h('div', { class: 'chart-block' });
+    const closed = weeks.filter((w) => new Date(w.week_resets_at) <= now);
+    if (weeks.length >= 2) {
+      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '주별 사용량' }),
+        h('div', { class: 'legend' },
+          h('span', {}, h('i', { class: 'key-box' }), '마감한 주'),
+          h('span', {}, h('i', { class: 'key-box open' }), '진행 중'))));
+      const host = h('div', { class: 'chart' });
+      block.append(host);
+      if (closed.length) {
+        const avg = closed.reduce((sum, w) => sum + w.used_pct, 0) / closed.length;
+        block.append(h('p', { class: 'note', text: `마감한 ${closed.length}주 평균은 ${pct(avg)}입니다.` }));
+      }
+      const table = h('table');
+      table.append(h('thead', {}, h('tr', {}, h('th', { text: '주 시작' }), h('th', { text: '사용률' }), h('th', { text: '상태' }))));
+      const tbody = h('tbody');
+      for (const w of [...weeks].reverse()) {
+        const r = new Date(w.week_resets_at), st = new Date(r - WEEK);
+        tbody.append(h('tr', {}, h('td', { text: `${mmdd(st)} ${weekdayShort(st)}` }), h('td', { text: pct(w.used_pct) }), h('td', { text: r <= now ? '마감' : '진행 중' })));
+      }
+      table.append(tbody);
+      block.append(h('details', {}, h('summary', { text: '주별 기록 표로 보기' }), table));
+      body.append(block);
+      drawWeekBars(host, weeks, now);
+    } else {
+      block.append(h('h3', { text: '주별 사용량' }),
+        h('p', { class: 'note', text: '주간 한도가 한 번 리셋된 뒤부터 주별로 비교할 수 있습니다. 리셋 직전 값이 그 주의 사용량으로 남습니다.' }));
+      body.append(block);
+    }
+    firstPaint = false;
+  }
+
+  // 첫 화면에서만 막대가 0에서 자라난다. 이후 갱신은 제자리에서 바뀐다.
+  function setFill(node, value) {
+    const width = `${clamp(value, 0, 100)}%`;
+    if (firstPaint) requestAnimationFrame(() => requestAnimationFrame(() => { node.style.width = width; }));
+    else { node.style.transition = 'none'; node.style.width = width; }
+  }
+
+  function drawWeekLine(host, points, start, end) {
+    const W = Math.max(280, host.clientWidth), H = 184;
+    const m = { l: 34, r: 16, t: 22, b: 26 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const x = (t) => m.l + clamp((t - start) / (end - start), 0, 1) * iw;
+    const y = (v) => m.t + (1 - clamp(v, 0, 100) / 100) * ih;
+    const lastPoint = points[points.length - 1];
+    const svg = s('svg', {
+      viewBox: `0 0 ${W} ${H}`, height: H, tabindex: '0', role: 'img',
+      'aria-label': lastPoint ? `이번 주 주간 사용률 추이. 가장 최근 값 ${pct(lastPoint.v)}. 좌우 화살표로 수집 시각별 값을 읽을 수 있습니다.` : '이번 주 주간 사용률 추이. 아직 값이 없습니다.',
+    });
+    for (const v of [0, 50, 100]) {
+      svg.append(s('line', { class: v === 0 ? 'axis' : 'grid', x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
+      svg.append(s('text', { class: 'tick-text', x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, v === 100 ? '100%' : String(v)));
+    }
+    for (let i = 0; i <= 7; i++) {
+      const px = x(start + i * DAY);
+      svg.append(s('line', { class: 'axis', x1: px, x2: px, y1: y(0), y2: y(0) + 4 }));
+      if (i < 7) svg.append(s('text', { class: 'tick-text', x: px + iw / 14, y: H - 6, 'text-anchor': 'middle' }, weekdayShort(new Date(start + i * DAY))));
+    }
+    svg.append(s('line', { class: 'pace-line', x1: x(start), y1: y(0), x2: x(end), y2: y(100) }));
+    if (points.length > 1) svg.append(s('path', { class: 'use-line', d: points.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('') }));
+    const cross = s('line', { class: 'cross', y1: m.t, y2: y(0), visibility: 'hidden' });
+    svg.append(cross);
+    if (lastPoint) {
+      const px = x(lastPoint.t), py = y(lastPoint.v);
+      svg.append(s('circle', { class: 'use-dot', cx: px, cy: py, r: 5 }));
+      const roomRight = px + 44 <= W;
+      svg.append(s('text', { class: 'value-text', x: roomRight ? px + 9 : px - 9, y: py - 8, 'text-anchor': roomRight ? 'start' : 'end' }, pct(lastPoint.v)));
+    }
+    const probe = s('circle', { class: 'use-dot', r: 5, visibility: 'hidden' });
+    svg.append(probe);
+    host.append(svg);
+
+    if (!points.length) return;
+    const tip = makeTip(host);
+    let active = -1;
+    function show(i) {
+      active = clamp(i, 0, points.length - 1);
+      const p = points[active], px = x(p.t), py = y(p.v), d = new Date(p.t);
+      cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+      probe.setAttribute('cx', px); probe.setAttribute('cy', py); probe.setAttribute('visibility', 'visible');
+      const paceAt = clamp((p.t - start) / (end - start), 0, 1) * 100;
+      tip.show(px, py, pct(p.v), `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}, 고르게 쓰면 ${pct(paceAt)}`);
+    }
+    function hide() { active = -1; cross.setAttribute('visibility', 'hidden'); probe.setAttribute('visibility', 'hidden'); tip.hide(); }
+    function nearest(e) {
+      const rect = svg.getBoundingClientRect();
+      const px = (e.clientX - rect.left) * (W / rect.width);
+      let best = 0, bestDist = Infinity;
+      points.forEach((p, i) => { const dist = Math.abs(x(p.t) - px); if (dist < bestDist) { bestDist = dist; best = i; } });
+      show(best);
+    }
+    svg.addEventListener('pointermove', nearest);
+    svg.addEventListener('pointerdown', nearest);
+    svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
+    svg.addEventListener('blur', hide);
+    svg.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') { show(active < 0 ? points.length - 1 : active - 1); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { show(active < 0 ? points.length - 1 : active + 1); e.preventDefault(); }
+      else if (e.key === 'Escape') hide();
+    });
+  }
+
+  function drawWeekBars(host, weeks, now) {
+    const W = Math.max(280, host.clientWidth), H = 176;
+    const m = { l: 34, r: 8, t: 22, b: 26 };
+    const iw = W - m.l - m.r, ih = H - m.t - m.b;
+    const band = iw / weeks.length;
+    const barW = Math.min(24, band - 2);
+    const y = (v) => m.t + (1 - clamp(v, 0, 100) / 100) * ih;
+    const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'group', 'aria-label': '주별 주간 한도 사용률' });
+    for (const v of [0, 50, 100]) {
+      svg.append(s('line', { class: v === 0 ? 'axis' : 'grid', x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
+      svg.append(s('text', { class: 'tick-text', x: m.l - 6, y: y(v) + 4, 'text-anchor': 'end' }, v === 100 ? '100%' : String(v)));
+    }
+    host.append(svg);
+    const tip = makeTip(host);
+    weeks.forEach((w, i) => {
+      const reset = new Date(w.week_resets_at), start = new Date(reset - WEEK);
+      const open = reset > now;
+      const cx = m.l + band * i + band / 2;
+      const top = y(w.used_pct), height = Math.max(0, y(0) - top);
+      const r = Math.min(4, height);
+      const left = cx - barW / 2, right = cx + barW / 2, base = y(0);
+      if (height > 0) {
+        svg.append(s('path', {
+          class: 'bar' + (open ? ' open' : ''),
+          d: `M${left},${base}V${top + r}Q${left},${top} ${left + r},${top}H${right - r}Q${right},${top} ${right},${top + r}V${base}Z`,
+        }));
+      }
+      svg.append(s('text', { class: 'value-text', x: cx, y: top - 6, 'text-anchor': 'middle' }, pct(w.used_pct)));
+      svg.append(s('text', { class: 'tick-text', x: cx, y: H - 6, 'text-anchor': 'middle' }, mmdd(start)));
+      const label = `${mmdd(start)} ${weekdayShort(start)}에 시작한 주, ${open ? '진행 중' : '마감'}, 기록 ${w.samples}회`;
+      const hit = s('rect', { class: 'bar-hit', x: cx - band / 2, y: m.t, width: band, height: ih, tabindex: '0', role: 'img', 'aria-label': `${label}, ${pct(w.used_pct)}` });
+      const show = () => tip.show(cx, top, pct(w.used_pct), label);
+      hit.addEventListener('pointerenter', show);
+      hit.addEventListener('pointerdown', show);
+      hit.addEventListener('focus', show);
+      hit.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') tip.hide(); });
+      hit.addEventListener('blur', () => tip.hide());
+      svg.append(hit);
+    });
+  }
+
+  /* ================= 주식 ================= */
+  function renderStocks() {
+    const list = $('#stocks'), note = $('#stocks-note');
+    list.textContent = '';
+    const items = stocks && Array.isArray(stocks.items) ? stocks.items : [];
+    if (!items.length) {
+      note.hidden = false;
+      note.textContent = stocks ? '아직 수집된 주가가 없습니다.' : '주가를 불러오지 못했습니다. 잠시 뒤 새로 고침해 주세요.';
+      $('#stocks-asof').textContent = '';
+      return;
+    }
+    note.hidden = true;
+    const number = new Intl.NumberFormat('ko-KR');
+    let latest = null, anyOpen = false;
+    for (const it of items) {
+      if (it.traded_at) { const d = new Date(it.traded_at); if (!latest || d > latest) latest = d; }
+      if (it.status === 'OPEN') anyOpen = true;
+      const dir = it.change > 0 ? 'up' : it.change < 0 ? 'down' : 'flat';
+      const glyph = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '–';
+      const sign = it.change_pct > 0 ? '+' : '';
+      const delta = dir === 'flat' ? '변동 없음' : `${glyph} ${number.format(Math.abs(it.change))} (${sign}${Number(it.change_pct).toFixed(2)}%)`;
+      const spoken = dir === 'flat' ? '변동 없음' : `${dir === 'up' ? '상승' : '하락'} ${number.format(Math.abs(it.change))}원, ${sign}${Number(it.change_pct).toFixed(2)}퍼센트`;
+      const link = h('a', { href: `https://m.stock.naver.com/domestic/stock/${encodeURIComponent(it.code)}/total`, target: '_blank', rel: 'noopener', 'aria-label': `${it.name} ${number.format(it.price)}원, ${spoken}. 네이버 증권에서 열기` },
+        h('span', {}, h('span', { class: 'stock-name', text: it.name }), h('br'), h('span', { class: 'stock-code', text: `${it.code}${it.stale ? ' 이전 값' : ''}` })),
+        h('span', { class: 'stock-quote' }, h('span', { class: 'stock-price', text: number.format(it.price) }), h('br'), h('span', { class: `stock-delta ${dir}`, text: delta })));
+      list.append(h('li', { class: 'stock' }, link));
+    }
+    $('#stocks-asof').textContent = latest
+      ? (anyOpen ? `${hhmm(latest)} 기준, 10~20분 늦을 수 있음` : `${mmdd(latest)} ${weekdayShort(latest)} 장 마감`)
+      : '';
+  }
+
+  /* ================= 갱신 ================= */
+  let lastLoad = 0, loading = false;
+  async function refresh() {
+    if (loading) return;
+    loading = true;
+    const button = $('#refresh');
+    button.textContent = '갱신 중';
+    const [u, w, st] = await Promise.all([loadJson('usage.json'), loadJson('weekly.json'), loadJson('stocks.json')]);
+    // 새로 받지 못한 항목은 이전 화면을 그대로 둔다.
+    if (u) usage = u; if (w) weekly = w; if (st) stocks = st;
+    renderUsage(); renderStocks();
+    lastLoad = Date.now();
+    loading = false;
+    button.textContent = `${hhmm(new Date())} 갱신`;
+  }
+  function tick() {
+    if (dayKey(new Date()) !== currentDay) { rollOver(); renderToday(); renderTasks(); }
+    if (document.visibilityState !== 'visible') return;
+    if (Date.now() - lastLoad > 5 * 60e3) refresh(); else if (usage) renderUsage();
+  }
+  $('#refresh').addEventListener('click', refresh);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { tick(); if (Date.now() - lastLoad > 60e3) refresh(); } });
+  let resizeTimer = null, lastWidth = window.innerWidth;
+  window.addEventListener('resize', () => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => { if (usage) renderUsage(); }, 150);
+  });
+  setInterval(tick, 60e3);
+
+  tasks = readTasks();
+  rollOver();
+  $('#storage-note').hidden = canStore;
+  renderToday();
+  renderTasks();
+  refresh();
+})();
+</script>
+</body>
+</html>

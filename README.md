@@ -1,62 +1,50 @@
-# workspace — Claude 사용량 자동 수집
+# workspace
 
-깃허브 서버가 하루 4회(한국 시간 08:07, 12:07, 17:07, 22:07) Claude Code를 한 번 짧게 실행하고,
-그때 함께 나오는 구독 사용률을 `data/` 폴더에 쌓습니다. PC가 꺼져 있어도 동작합니다.
-주간 한도 리셋(월요일 06:00) 직전인 월요일 05:17에도 한 번 더 읽어 그 주의 최종 사용률을 남깁니다.
+오늘 할 일, Claude 사용량, 관심 종목 현재가를 한 화면에서 보는 개인 대시보드입니다.
+갤럭시 S23 화면을 기준으로 만들었고, PC 브라우저에서는 두 단으로 펼쳐집니다.
 
-## 쌓이는 데이터
+화면 주소: https://sidemake.github.io/workspace/
 
-| 파일 | 내용 |
+## 구성
+
+| 영역 | 데이터가 오는 곳 | 갱신 |
+|---|---|---|
+| 오늘 할 일 | 화면을 연 기기의 브라우저 저장소 | 직접 입력. 끝낸 일은 다음 날 사라지고, 못 끝낸 일은 다음 날로 넘어갑니다. |
+| Claude 사용량 | `data/usage.json`, `data/weekly.json` | 깃허브 액션이 하루 4회(08:07, 12:07, 17:07, 22:07)와 월요일 05:17에 수집 |
+| 주식 | `data/stocks.json` | 깃허브 액션이 평일 09:03~15:53에 10분 간격으로 수집 |
+
+시각은 모두 한국 시간이며, 깃허브 예약 실행은 몇 분에서 수십 분 늦어질 수 있습니다.
+화면은 열려 있는 동안 5분마다, 그리고 다시 화면으로 돌아올 때 새 데이터를 읽습니다.
+
+## 파일
+
+| 파일 | 역할 |
 |---|---|
-| `data/usage.json` | 수집할 때마다 한 건: 시각, 5시간 사용률, 주간 사용률, 각 리셋 시각 |
-| `data/weekly.json` | 주 단위 집계: 그 주의 최고 사용률(= 그 주 사용량), 기록 횟수 |
+| `index.html` | 대시보드 화면 전체(스타일·스크립트 포함) |
+| `config/stocks.json` | 표시할 종목 목록. 종목을 바꾸려면 이 파일만 고칩니다. |
+| `scripts/collect_usage.py` | Claude Code 실행 결과에서 5시간·주간 사용률을 꺼내 기록 |
+| `scripts/collect_stocks.py` | 종목별 현재가 조회(네이버 증권, 실패 시 야후 파이낸스) |
+| `.github/workflows/collect-usage.yml` | 사용량 수집 예약 |
+| `.github/workflows/collect-stocks.yml` | 주가 수집 예약 |
 
-## 설정 순서
+## 사용량 수집이 동작하는 방식
 
-### 1. PC에서 확인 (최초 1회)
-
-PowerShell을 열고 차례로 실행합니다.
-
-```powershell
-claude --version
-```
-
-"찾을 수 없다"고 나오면 먼저 설치합니다.
-
-```powershell
-irm https://claude.ai/install.ps1 | iex
-```
-
-설치 후 `claude` 를 실행해 Claude 계정으로 로그인한 다음, 아래 확인 명령을 실행합니다.
-
-```powershell
-claude -p "Reply with the single word: done" --model haiku --output-format stream-json --verbose | Select-String "rate_limit_event"
-```
-
-출력된 줄에 `unifiedWindows` 와 `seven_day` 가 보이면 이 방식으로 수집할 수 있습니다.
-보이지 않으면 여기서 멈추고 다른 방법을 찾아야 합니다.
-
-### 2. 장기 토큰 발급 (최초 1회, 약 1년 유효)
-
-```powershell
-claude setup-token
-```
-
-브라우저에서 승인하면 `sk-ant-` 로 시작하는 토큰이 나옵니다. 이 값은 비밀번호와 같으니
-채팅이나 파일에 붙여 넣지 말고 다음 단계의 깃허브 비밀값 칸에만 넣습니다.
-
-### 3. 깃허브 저장소 설정
-
-1. 이 폴더의 파일들이 올라간 저장소에서 **Settings → Secrets and variables → Actions → New repository secret**
-2. Name: `CLAUDE_CODE_OAUTH_TOKEN`, Secret: 2단계의 토큰
-3. **Actions** 탭 → "Claude 사용량 수집" → **Run workflow** 로 첫 실행
-4. 성공하면 `data/usage.json` 에 첫 기록이 생깁니다. 이후는 자동입니다.
-
-## 알아둘 점
+깃허브 서버가 Claude Code에 한 단어짜리 호출을 한 번 보내고, 그 출력에 함께 실려 오는
+5시간 창과 7일 창의 사용률을 읽습니다. 저장소 비밀값 `CLAUDE_CODE_OAUTH_TOKEN`
+(PC에서 `claude setup-token` 으로 발급, 약 1년 유효)으로 인증합니다.
 
 - 수집 한 번마다 아주 짧은 호출이 실제로 나가므로 사용량이 조금 들고, 그 시점에 5시간 세션이 시작될 수 있습니다.
 - 수집되는 값은 5시간과 주간 전체 두 가지입니다. Fable 주간 한도는 이 경로로 나오지 않습니다.
 - 사용률이 출력에 실리는 것은 공식 문서에 명시된 기능이 아니어서, Claude Code 버전이 바뀌면 중단될 수 있습니다.
-  그 경우 Actions 실행이 "실패"로 표시됩니다.
-- 수집 주기를 바꾸려면 `.github/workflows/collect-usage.yml` 의 `cron` 줄을 고칩니다(UTC 기준).
-- 토큰이 만료되거나 유출이 의심되면 `claude setup-token` 을 다시 실행해 새 값으로 비밀값을 교체합니다.
+  그 경우 Actions 실행이 "실패"로 표시되고, 화면에는 마지막 수집이 오래됐다는 안내가 뜹니다.
+- 주간 집계는 같은 주(리셋 시각이 같은 기록)의 최고 사용률을 그 주의 사용량으로 남깁니다.
+  리셋(월요일 06:00) 직전인 월요일 05:17 수집이 최종값이 됩니다.
+
+## 손볼 때
+
+- **종목 변경:** `config/stocks.json` 에 종목 코드, 이름, 시장(KOSPI/KOSDAQ)을 적습니다.
+- **수집 주기 변경:** 각 워크플로 파일의 `cron` 줄을 고칩니다(UTC 기준, 한국 시간에서 9시간을 뺍니다).
+- **토큰 교체:** 만료되거나 유출이 의심되면 `claude setup-token` 을 다시 실행해
+  Settings → Secrets and variables → Actions 의 `CLAUDE_CODE_OAUTH_TOKEN` 값을 바꿉니다.
+- **주가가 안 나올 때:** 조회 주소는 공식 제공 API가 아닙니다. 응답 형식이 바뀌면
+  `scripts/collect_stocks.py` 의 `fetch_naver`, `fetch_yahoo` 를 고쳐야 합니다.
