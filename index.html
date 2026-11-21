@@ -592,7 +592,9 @@
     }
 
     /* ---- 주별 사용량 ---- */
-    const weeks = (weekly || []).filter((w) => w.week_resets_at && w.used_pct != null).slice(-8);
+    // 좁은 화면에서는 날짜 표기가 겹치지 않을 만큼만 보여 준다.
+    const fit = clamp(Math.floor((body.clientWidth - 50) / 44), 4, 8);
+    const weeks = (weekly || []).filter((w) => w.week_resets_at && w.used_pct != null).slice(-fit);
     const block = h('div', { class: 'chart-block' });
     const closed = weeks.filter((w) => new Date(w.week_resets_at) <= now);
     if (weeks.length >= 2) {
@@ -634,7 +636,7 @@
 
   function drawWeekLine(host, points, start, end) {
     const W = Math.max(280, host.clientWidth), H = 184;
-    const m = { l: 34, r: 16, t: 22, b: 26 };
+    const m = { l: 42, r: 16, t: 22, b: 26 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const x = (t) => m.l + clamp((t - start) / (end - start), 0, 1) * iw;
     const y = (v) => m.t + (1 - clamp(v, 0, 100) / 100) * ih;
@@ -687,6 +689,7 @@
     }
     svg.addEventListener('pointermove', nearest);
     svg.addEventListener('pointerdown', nearest);
+    svg.addEventListener('click', nearest);
     svg.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') hide(); });
     svg.addEventListener('blur', hide);
     svg.addEventListener('keydown', (e) => {
@@ -698,7 +701,7 @@
 
   function drawWeekBars(host, weeks, now) {
     const W = Math.max(280, host.clientWidth), H = 176;
-    const m = { l: 34, r: 8, t: 22, b: 26 };
+    const m = { l: 42, r: 8, t: 22, b: 26 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const band = iw / weeks.length;
     const barW = Math.min(24, band - 2);
@@ -730,6 +733,7 @@
       const show = () => tip.show(cx, top, pct(w.used_pct), label);
       hit.addEventListener('pointerenter', show);
       hit.addEventListener('pointerdown', show);
+      hit.addEventListener('click', show);
       hit.addEventListener('focus', show);
       hit.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') tip.hide(); });
       hit.addEventListener('blur', () => tip.hide());
