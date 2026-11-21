@@ -1,8 +1,9 @@
 [
  {
   "week_resets_at": "2026-11-23T06:00+09:00",
-  "used_pct": 27.0,
-  "samples": 1,
-  "last_recorded": "2026-11-21T08:54+09:00"
+  "used_pct": 29.0,
+  "fable_used_pct": 53.0,
+  "samples": 2,
+  "last_recorded": "2026-11-21T09:29+09:00"
  }
 ]
