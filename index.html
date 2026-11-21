@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; manifest-src 'self'; base-uri 'none'; form-action 'self'">
 <title>workspace</title>
 <meta name="theme-color" content="#f4f6f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#11231c" media="(prefers-color-scheme: dark)">
@@ -63,6 +64,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
@@ -90,10 +92,14 @@
     min-height: 44px;
   }
   .wordmark { font-size: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--mark); }
+  .top-right { display: inline-flex; align-items: center; gap: 12px; }
+  .refreshed { font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
   .refresh {
-    background: none; border: 0; padding: 10px 0 10px 16px;
-    font-size: 13px; color: var(--ink-3);
+    background: none; border: 1px solid var(--rule-strong); border-radius: 16px;
+    height: 32px; padding: 0 12px; font-size: 13px; color: var(--ink-2);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
   }
+  .notice { margin: 8px 0 0; padding: 10px 12px; border: 1px solid var(--rule-strong); border-radius: 8px; font-size: 14px; color: var(--ink); }
 
   h1 { font-size: 32px; line-height: 1.2; font-weight: 600; margin: 20px 0 4px; letter-spacing: -0.01em; }
   h2 { font-size: 20px; line-height: 1.3; font-weight: 600; margin: 0; }
@@ -235,7 +241,17 @@
   .stock-delta.down { color: var(--down); }
   .stock-delta.flat { color: var(--ink-3); }
 
-  .foot { margin-top: 48px; font-size: 12px; color: var(--ink-3); }
+  .settings { margin-top: 48px; border-top: 1px solid var(--rule); padding-top: 8px; }
+  .settings summary { font-size: 14px; }
+  .token-form { display: flex; align-items: center; gap: 8px; margin-top: 12px; border-bottom: 1px solid var(--rule-strong); }
+  .token-form:focus-within { border-bottom-color: var(--accent); }
+  .token-form input { flex: 1; min-width: 0; height: 44px; padding: 0; background: none; border: 0; outline: none; font-size: 14px; }
+  .token-form input::placeholder { color: var(--ink-3); }
+  .token-form button { flex: none; height: 32px; padding: 0 14px; background: var(--accent); color: var(--on-accent); border: 0; border-radius: 16px; font-size: 13px; font-weight: 500; }
+  .auto-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; }
+  .auto-row input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .text-button { background: none; border: 0; padding: 12px 0; font-size: 13px; color: var(--ink-2); text-decoration: underline; text-underline-offset: 3px; }
+  .foot { margin-top: 24px; font-size: 12px; color: var(--ink-3); }
 
   .toast {
     position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
@@ -251,7 +267,7 @@
 
   @media (min-width: 900px) {
     .page { max-width: 1040px; display: grid; grid-template-columns: 1fr 1fr; column-gap: 72px; align-items: start; }
-    .top { grid-column: 1 / -1; }
+    .top, .notice { grid-column: 1 / -1; }
     .col-right .section:first-child { margin-top: 20px; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -263,8 +279,9 @@
 <div class="page">
   <header class="top">
     <span class="wordmark">workspace</span>
-    <button class="refresh" id="refresh" type="button">새로 고침</button>
+    <span class="top-right"><span class="refreshed" id="refreshed"></span><button class="refresh" id="refresh" type="button">새로 고침</button></span>
   </header>
+  <p class="notice" id="notice" role="status" hidden></p>
 
   <div class="col-left">
     <section aria-labelledby="today">
@@ -298,6 +315,18 @@
       <ul class="stocks" id="stocks"></ul>
       <p class="note" id="stocks-note" hidden></p>
     </section>
+
+    <details class="settings" id="settings" hidden>
+      <summary>열 때마다 새 값 받기</summary>
+      <p class="note">깃허브 토큰을 넣어 두면 화면을 열 때와 "지금 수집"을 누를 때 수집을 바로 실행하고, 끝나면 새 값을 보여 줍니다. 한 번에 30초쯤 걸립니다. 토큰은 이 기기의 브라우저에만 저장되고 깃허브로만 전송됩니다.</p>
+      <form class="token-form" id="token-form" autocomplete="off">
+        <input id="token-input" type="password" placeholder="github_pat_…" aria-label="깃허브 토큰" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button type="submit">저장</button>
+      </form>
+      <p class="note" id="token-state" role="status"></p>
+      <label class="auto-row" id="auto-row" hidden><input type="checkbox" id="auto-collect"> 화면을 열 때 자동으로 수집</label>
+      <button class="text-button" id="token-clear" type="button" hidden>토큰 지우기</button>
+    </details>
 
     <p class="foot">할 일은 이 기기에만 저장됩니다. 사용량과 주가는 저장소에 쌓인 수집 기록을 읽어 옵니다.</p>
   </div>
@@ -453,17 +482,40 @@
   });
 
   /* ================= 데이터 읽기 ================= */
-  // 깃허브 페이지에서 열렸으면 저장소의 최신 파일을 직접 읽고, 안 되면 페이지와 함께 배포된 파일을 읽는다.
+  // 깃허브 페이지 주소(<계정>.github.io/<저장소>/)에서 저장소 위치를 알아낸다.
+  const repoInfo = (() => {
+    const host = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const repo = location.pathname.split('/').filter(Boolean)[0];
+    return host && repo ? { owner: host[1], repo } : null;
+  })();
+  const TOKEN_KEY = 'workspace.github.token', AUTO_KEY = 'workspace.collect.auto', LAST_KEY = 'workspace.collect.last';
+  const store = {
+    get(key) { try { return localStorage.getItem(key); } catch (e) { return null; } },
+    set(key, value) { try { if (value == null) localStorage.removeItem(key); else localStorage.setItem(key, value); return true; } catch (e) { return false; } },
+  };
+  // 토큰은 이 기기의 브라우저에만 있고, 깃허브 API 주소로만 보낸다.
+  const token = () => (repoInfo && store.get(TOKEN_KEY)) || '';
+  function gh(path, opts = {}) {
+    return fetch(`https://api.github.com/repos/${repoInfo.owner}/${repoInfo.repo}/${path}`, {
+      ...opts, cache: 'no-store',
+      headers: { Authorization: `Bearer ${token()}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', ...(opts.headers || {}) },
+    });
+  }
+  // 저장소의 최신 파일을 직접 읽고, 안 되면 페이지와 함께 배포된 파일을 읽는다.
   function sources(name) {
     const bucket = Math.floor(Date.now() / 120000);
     const urls = [];
-    const host = location.hostname.match(/^([^.]+)\.github\.io$/);
-    const repo = location.pathname.split('/').filter(Boolean)[0];
-    if (host && repo) urls.push(`https://raw.githubusercontent.com/${host[1]}/${repo}/main/data/${name}?v=${bucket}`);
+    if (repoInfo) urls.push(`https://raw.githubusercontent.com/${repoInfo.owner}/${repoInfo.repo}/main/data/${name}?v=${bucket}`);
     urls.push(`data/${name}?v=${bucket}`);
     return urls;
   }
   async function loadJson(name) {
+    if (token()) { // 토큰이 있으면 지연 없는 API로 읽는다(일반 주소는 최대 5분 늦다).
+      try {
+        const res = await gh(`contents/data/${name}?ref=main`, { headers: { Accept: 'application/vnd.github.raw+json' } });
+        if (res.ok) return await res.json();
+      } catch (e) { /* 일반 주소로 */ }
+    }
     for (const url of sources(name)) {
       try {
         const res = await fetch(url, { cache: 'no-store' });
@@ -863,27 +915,127 @@
   }
 
   /* ================= 갱신 ================= */
-  let lastLoad = 0, loading = false;
+  let lastLoad = 0, loading = false, collecting = false;
+  function setButton() { if (!collecting) $('#refresh').textContent = token() ? '지금 수집' : '새로 고침'; }
+  function notice(text) { const node = $('#notice'); node.textContent = text || ''; node.hidden = !text; }
   async function refresh() {
     if (loading) return;
     loading = true;
-    const button = $('#refresh');
-    button.textContent = '갱신 중';
+    $('#refreshed').textContent = '읽는 중';
     const [u, w, st] = await Promise.all([loadJson('usage.json'), loadJson('weekly.json'), loadJson('stocks.json')]);
     // 새로 받지 못한 항목은 이전 화면을 그대로 둔다.
     if (u) usage = u; if (w) weekly = w; if (st) stocks = st;
     renderUsage(); renderStocks();
     lastLoad = Date.now();
     loading = false;
-    button.textContent = `${hhmm(new Date())} 갱신`;
+    $('#refreshed').textContent = `${hhmm(new Date())} 읽음`;
+    setButton();
+    maybeAutoCollect();
   }
+
+  /* ---- 바로 수집: 깃허브의 수집 작업을 지금 실행하고, 끝나면 새 값을 읽는다 ---- */
+  const WORKFLOWS = { usage: 'collect-usage.yml', stocks: 'collect-stocks.yml' };
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  async function runWorkflow(file) {
+    const t0 = Date.now();
+    const res = await gh(`actions/workflows/${file}/dispatches`, { method: 'POST', body: JSON.stringify({ ref: 'main' }) });
+    if (!res.ok) {
+      throw new Error(res.status === 401 ? '토큰이 만료됐거나 잘못됐습니다. 아래 설정에서 다시 넣어 주세요.'
+        : res.status === 403 || res.status === 404 ? '토큰 권한이 부족합니다. Actions 읽기·쓰기 권한을 확인해 주세요.'
+        : `깃허브가 수집 요청을 받지 않았습니다(응답 ${res.status}).`);
+    }
+    while (Date.now() - t0 < 180e3) {
+      await sleep(4000);
+      let run = null;
+      try {
+        const r = await gh(`actions/workflows/${file}/runs?event=workflow_dispatch&per_page=1`);
+        if (r.ok) run = ((await r.json()).workflow_runs || [])[0];
+      } catch (e) { /* 다음 확인 때 다시 */ }
+      if (run && Date.parse(run.created_at) >= t0 - 30e3 && run.status === 'completed') return run.conclusion === 'success';
+    }
+    throw new Error('수집이 3분 안에 끝나지 않았습니다. 잠시 뒤 다시 눌러 주세요.');
+  }
+  async function collect(kinds) {
+    if (collecting || !token() || !kinds.length) return;
+    collecting = true;
+    store.set(LAST_KEY, String(Date.now()));
+    notice('');
+    const button = $('#refresh'), started = Date.now();
+    const label = () => { button.textContent = `수집 중 ${Math.round((Date.now() - started) / 1000)}초`; };
+    label();
+    const timer = setInterval(label, 1000);
+    let message = '';
+    try {
+      const results = await Promise.all(kinds.map((kind) => runWorkflow(WORKFLOWS[kind])));
+      if (results.includes(false)) message = '수집 실행이 실패로 끝났습니다. 저장소의 Actions 기록을 확인해 주세요.';
+    } catch (e) { message = e.message || '수집 요청에 실패했습니다.'; }
+    clearInterval(timer);
+    collecting = false;
+    setButton();
+    await refresh();
+    notice(message);
+  }
+  // 주가는 평일 08:00~20:30 사이에만 다시 받을 가치가 있다.
+  function marketWindow() {
+    const p = partsOf(new Date(), { weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const minutes = Number(p.hour) * 60 + Number(p.minute);
+    return !['토', '일'].includes(p.weekday) && minutes >= 480 && minutes <= 1230;
+  }
+  // 화면을 열었을 때: 마지막 기록이 15분(주가는 3분)보다 오래됐으면 수집을 실행한다. 2분 안에는 다시 하지 않는다.
+  function maybeAutoCollect() {
+    if (!token() || collecting || store.get(AUTO_KEY) === 'off' || document.visibilityState !== 'visible') return;
+    if (Date.now() - Number(store.get(LAST_KEY) || 0) < 2 * 60e3) return;
+    const kinds = [];
+    const lastUsage = usage && usage.length ? +new Date(usage[usage.length - 1].t) : 0;
+    if (Date.now() - lastUsage > 15 * 60e3) kinds.push('usage');
+    const lastStocks = stocks && stocks.updated ? +new Date(stocks.updated) : 0;
+    if (marketWindow() && Date.now() - lastStocks > 3 * 60e3) kinds.push('stocks');
+    collect(kinds);
+  }
+
+  /* ---- 바로 수집 설정 ---- */
+  function renderSettings(message) {
+    if (!repoInfo) return;
+    $('#settings').hidden = false;
+    const has = !!token();
+    $('#token-state').textContent = message || (has ? '토큰이 저장되어 있습니다. 화면을 열 때와 "지금 수집"을 누를 때 바로 수집합니다.' : '토큰이 없어, 정해진 시각에 수집된 값만 보여 줍니다.');
+    $('#token-clear').hidden = !has;
+    $('#auto-row').hidden = !has;
+    $('#auto-collect').checked = store.get(AUTO_KEY) !== 'off';
+    setButton();
+  }
+  $('#token-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = $('#token-input');
+    const value = input.value.trim();
+    input.value = '';
+    if (!value) return;
+    if (!store.set(TOKEN_KEY, value)) { renderSettings('이 브라우저에서는 토큰을 저장할 수 없습니다.'); return; }
+    renderSettings('토큰을 확인하는 중입니다.');
+    let ok = false, canRead = false;
+    try {
+      ok = (await gh(`actions/workflows/${WORKFLOWS.usage}`)).ok;
+      canRead = ok && (await gh('contents/data/usage.json?ref=main')).ok;
+    } catch (err) { /* 아래에서 안내 */ }
+    if (!ok) { store.set(TOKEN_KEY, null); renderSettings('이 토큰으로는 저장소의 수집 작업에 접근할 수 없어 저장하지 않았습니다. 권한(Actions 읽기·쓰기)과 대상 저장소를 확인해 주세요.'); return; }
+    if (!canRead) { store.set(TOKEN_KEY, null); renderSettings('이 토큰으로는 수집 기록 파일을 읽을 수 없어 저장하지 않았습니다. Contents 읽기 권한을 추가해 주세요.'); return; }
+    renderSettings();
+    maybeAutoCollect();
+  });
+  $('#token-clear').addEventListener('click', () => { store.set(TOKEN_KEY, null); renderSettings('토큰을 지웠습니다.'); });
+  $('#auto-collect').addEventListener('change', (e) => { store.set(AUTO_KEY, e.target.checked ? null : 'off'); });
+
   function tick() {
     if (dayKey(new Date()) !== currentDay) { rollOver(); renderToday(); renderTasks(); }
     if (document.visibilityState !== 'visible') return;
     if (Date.now() - lastLoad > 5 * 60e3) refresh(); else if (usage) renderUsage();
   }
-  $('#refresh').addEventListener('click', refresh);
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { tick(); if (Date.now() - lastLoad > 60e3) refresh(); } });
+  $('#refresh').addEventListener('click', () => { if (token()) collect(['usage', 'stocks']); else refresh(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible') return;
+    tick();
+    if (Date.now() - lastLoad > 60e3) refresh(); else maybeAutoCollect();
+  });
   let resizeTimer = null, lastWidth = window.innerWidth;
   window.addEventListener('resize', () => {
     if (window.innerWidth === lastWidth) return;
@@ -898,6 +1050,7 @@
   $('#storage-note').hidden = canStore;
   renderToday();
   renderTasks();
+  renderSettings();
   refresh();
 })();
 </script>
