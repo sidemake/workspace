@@ -27,6 +27,8 @@ jobs:
         run: |
           claude -p "Reply with the single word: done" \
             --model "$MODEL" --max-turns 1 \
+            --tools "" --disable-slash-commands \
+            --system-prompt "Reply with one word." \
             --output-format stream-json --verbose \
             > "$RUNNER_TEMP/out.jsonl" 2> "$RUNNER_TEMP/err.txt" || true
           python3 - "$RUNNER_TEMP/out.jsonl" <<'EOF'
@@ -43,4 +45,7 @@ jobs:
               elif ev.get("type") == "result":
                   print("RESULT", "error" if ev.get("is_error") else "ok", str(ev.get("result"))[:120],
                         "| used models:", list((ev.get("modelUsage") or {}).keys()))
+                  u = ev.get("usage") or {}
+                  print("TOKENS in", u.get("input_tokens"), "cache_write", u.get("cache_creation_input_tokens"),
+                        "cache_read", u.get("cache_read_input_tokens"), "out", u.get("output_tokens"))
           EOF
