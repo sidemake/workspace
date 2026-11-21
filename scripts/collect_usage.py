@@ -2,8 +2,11 @@
 """Claude 구독 사용률 수집기.
 
 `claude -p ... --output-format stream-json --verbose` 의 출력 파일을 읽어
-5시간·7일 사용률을 data/usage.json 에 한 줄 추가하고,
+5시간·7일(전체 모델)·Fable 전용 주간 사용률을 data/usage.json 에 한 줄 추가하고,
 주 단위 집계(data/weekly.json)를 다시 만든다.
+
+Fable 전용 주간 한도는 Fable 모델로 호출했을 때만 `seven_day_overage_included` 라는
+이름의 창으로 실려 온다(Claude Code 화면에서 "Fable limit"으로 표시되는 값).
 
 사용법: collect_usage.py <stream-json 출력 파일> <data 폴더>
 
@@ -16,6 +19,7 @@ import sys
 
 KST = datetime.timezone(datetime.timedelta(hours=9))
 MAX_RECORDS = 5000  # 하루 4회 기준 3년 이상
+FABLE_WINDOW = "seven_day_overage_included"
 
 
 def to_pct(value):
@@ -75,9 +79,13 @@ def rebuild_weekly(records):
             (w for w in weeks if abs((w["_reset"] - reset).total_seconds()) <= 3600), None
         )
         if week is None:
-            week = {"week_resets_at": key, "used_pct": 0, "samples": 0, "last_recorded": None, "_reset": reset}
+            week = {"week_resets_at": key, "used_pct": 0, "fable_used_pct": None, "samples": 0,
+                    "last_recorded": None, "_reset": reset}
             weeks.append(week)
         week["used_pct"] = max(week["used_pct"], pct)
+        fable = rec.get("fable_week_pct")
+        if fable is not None:
+            week["fable_used_pct"] = max(week["fable_used_pct"] or 0, fable)
         week["samples"] += 1
         week["last_recorded"] = rec["t"]
     weeks.sort(key=lambda w: w["_reset"])
@@ -102,6 +110,9 @@ def main():
         win = windows.pop(name, None)
         record[f"{name}_pct"] = win["pct"] if win else None
         record[f"{name}_resets_at"] = win["resets_at"] if win else None
+    fable = windows.pop(FABLE_WINDOW, None)
+    record["fable_week_pct"] = fable["pct"] if fable else None
+    record["fable_week_resets_at"] = fable["resets_at"] if fable else None
     if windows:  # 그 밖의 창이 실려 오면 버리지 않고 함께 남긴다
         record["other"] = windows
 
@@ -115,7 +126,8 @@ def main():
     weekly_path.write_text(
         json.dumps(rebuild_weekly(records), ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
     )
-    print(f"기록: 5시간 {record['five_hour_pct']}% / 주간 {record['seven_day_pct']}% (총 {len(records)}건)")
+    print(f"기록: 5시간 {record['five_hour_pct']}% / 주간 전체 {record['seven_day_pct']}% / "
+          f"주간 Fable {record['fable_week_pct']}% (총 {len(records)}건)")
 
 
 if __name__ == "__main__":

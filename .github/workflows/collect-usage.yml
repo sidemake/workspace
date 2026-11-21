@@ -34,13 +34,23 @@ jobs:
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          # 한 단어짜리 호출을 한 번 보내고, 함께 나오는 사용률만 꺼냅니다.
+          # 도구와 기본 지침을 뺀 한 단어짜리 호출(입력 약 400토큰)을 보내고, 함께 나오는 사용률만 꺼냅니다.
           # 원본 출력은 로그에 찍지 않습니다(공개 저장소의 로그는 누구나 볼 수 있습니다).
-          claude -p "Reply with the single word: done" \
-            --model haiku --max-turns 1 \
-            --output-format stream-json --verbose \
-            > "$RUNNER_TEMP/out.jsonl" 2> "$RUNNER_TEMP/err.txt" || true
-          python3 scripts/collect_usage.py "$RUNNER_TEMP/out.jsonl" data
+          probe() {
+            claude -p "Reply with the single word: done" \
+              --model "$1" --max-turns 1 \
+              --tools "" --disable-slash-commands \
+              --system-prompt "Reply with one word." \
+              --output-format stream-json --verbose \
+              > "$RUNNER_TEMP/out.jsonl" 2> "$RUNNER_TEMP/err.txt" || true
+          }
+          # Fable 전용 주간 한도는 Fable 모델로 호출해야 실려 옵니다.
+          probe fable
+          if ! python3 scripts/collect_usage.py "$RUNNER_TEMP/out.jsonl" data; then
+            echo "Fable 호출로는 읽지 못해 Haiku로 다시 시도합니다(5시간·주간 전체만 기록)."
+            probe haiku
+            python3 scripts/collect_usage.py "$RUNNER_TEMP/out.jsonl" data
+          fi
 
       - name: 기록 저장
         run: |

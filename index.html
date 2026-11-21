@@ -31,8 +31,11 @@
     --down: #1d5fb3;
     --warn: #fab219;
     --crit: #d03b3b;
-    --tip-bg: #15221c;
-    --tip-ink: #f4f6f2;
+    --fable: #6250d6;
+    --fable-track: #dcd8f6;
+    --tip-bg: #ffffff;
+    --toast-bg: #15221c;
+    --toast-ink: #f4f6f2;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -51,8 +54,11 @@
       --down: #86b8f2;
       --warn: #fab219;
       --crit: #e66767;
-      --tip-bg: #e8efe9;
-      --tip-ink: #11231c;
+      --fable: #9085e9;
+      --fable-track: #2b2850;
+      --tip-bg: #1a3229;
+      --toast-bg: #e8efe9;
+      --toast-ink: #11231c;
     }
   }
 
@@ -138,15 +144,19 @@
   .add:focus-within { border-bottom-color: var(--accent); }
 
   /* 사용량 */
-  .week-figure { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
-  .hero { font-size: 56px; line-height: 1; font-weight: 600; letter-spacing: -0.02em; }
-  .verdict { font-size: 15px; color: var(--ink-2); }
+  .limit { margin-top: 22px; }
+  h3 + .limit { margin-top: 10px; }
+  .limit-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .limit-name { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500; }
+  .limit-value { font-size: 32px; line-height: 1.1; font-weight: 600; letter-spacing: -0.01em; }
+  .limit-note { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
   .status { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; margin-top: 8px; }
   .status svg { width: 16px; height: 16px; flex: none; }
   .status.warn svg { color: var(--warn); }
   .status.crit svg { color: var(--crit); }
 
-  .ruler { position: relative; margin-top: 30px; }
+  .ruler { position: relative; margin-top: 12px; }
+  .ruler.first { margin-top: 28px; }
   .ruler-track { height: 12px; border-radius: 6px; background: var(--accent-track); overflow: hidden; }
   .ruler-fill { height: 100%; width: 0; background: var(--accent); border-radius: 6px; transition: width 0.7s cubic-bezier(.2,.7,.2,1); }
   .ruler-fill.warn { background: var(--warn); }
@@ -173,7 +183,6 @@
   .key-line { width: 14px; height: 2px; border-radius: 1px; background: var(--accent); }
   .key-line.pace { background: var(--ink-3); }
   .key-box { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); }
-  .key-box.open { background: var(--accent-track); }
   .chart { position: relative; margin-top: 8px; }
   .chart svg { display: block; width: 100%; touch-action: pan-y; }
   .chart svg:focus-visible { outline-offset: 4px; }
@@ -186,18 +195,22 @@
   .use-dot { fill: var(--accent); stroke: var(--paper); stroke-width: 2; }
   .cross { stroke: var(--ink-2); stroke-width: 1; }
   .bar { fill: var(--accent); }
-  .bar.open { fill: var(--accent-track); }
   .bar-hit { fill: transparent; }
   .bar-hit:focus-visible { outline: 2px solid var(--accent); }
   .tip {
     position: absolute; top: 0; left: 0; pointer-events: none;
-    background: var(--tip-bg); color: var(--tip-ink);
-    border-radius: 6px; padding: 6px 10px; font-size: 12px; line-height: 1.4;
+    background: var(--tip-bg); color: var(--ink);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px; padding: 7px 10px; font-size: 12px; line-height: 1.4;
     white-space: nowrap; opacity: 0; transition: opacity 0.12s;
     z-index: 2;
   }
   .tip.show { opacity: 1; }
-  .tip strong { font-size: 14px; font-weight: 600; display: block; }
+  .tip-row { display: flex; align-items: center; gap: 6px; }
+  .tip-key { width: 10px; height: 2px; border-radius: 1px; flex: none; }
+  .tip-row strong { font-size: 14px; font-weight: 600; }
+  .tip-row span { color: var(--ink-2); }
+  .tip-label { color: var(--ink-2); margin-top: 2px; }
 
   details { margin-top: 10px; }
   summary { font-size: 13px; color: var(--ink-2); padding: 8px 0; cursor: pointer; width: fit-content; }
@@ -227,7 +240,7 @@
   .toast {
     position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
     transform: translate(-50%, 12px);
-    background: var(--tip-bg); color: var(--tip-ink);
+    background: var(--toast-bg); color: var(--toast-ink);
     border-radius: 22px; padding: 4px 6px 4px 16px; font-size: 14px;
     display: flex; align-items: center; gap: 8px;
     opacity: 0; pointer-events: none; transition: opacity 0.15s, transform 0.15s;
@@ -465,12 +478,18 @@
     const tip = h('div', { class: 'tip', role: 'presentation' });
     host.append(tip);
     return {
-      show(x, y, value, label) {
+      // rows: [{ color, value, name }] — 값이 먼저, 이름이 뒤따른다.
+      show(x, y, rows, label) {
         tip.textContent = '';
-        tip.append(h('strong', { text: value }), document.createTextNode(label));
+        for (const r of rows) {
+          const key = h('i', { class: 'tip-key' });
+          key.style.background = r.color;
+          tip.append(h('div', { class: 'tip-row' }, key, h('strong', { text: r.value }), h('span', { text: r.name })));
+        }
+        tip.append(h('div', { class: 'tip-label', text: label }));
         tip.classList.add('show');
         const w = tip.offsetWidth, hostW = host.clientWidth;
-        tip.style.left = `${clamp(x - w / 2, 0, hostW - w)}px`;
+        tip.style.left = `${clamp(x - w / 2, 0, Math.max(0, hostW - w))}px`;
         tip.style.top = `${Math.max(0, y - tip.offsetHeight - 10)}px`;
       },
       hide() { tip.classList.remove('show'); },
@@ -480,6 +499,16 @@
   /* ================= 사용량 ================= */
   let usage = null, weekly = null, stocks = null, firstPaint = true;
   const sameWeek = (a, b) => Math.abs(new Date(a) - new Date(b)) <= HOUR;
+  // 주간 한도는 두 가지다: 모든 모델을 합친 한도와 Fable 전용 한도. 색은 항목을 따라간다.
+  const SERIES = [
+    { key: 'all', name: '전체 모델', color: 'var(--accent)', track: 'var(--accent-track)' },
+    { key: 'fable', name: 'Fable', color: 'var(--fable)', track: 'var(--fable-track)' },
+  ];
+  function swatch(series, cls = 'key-box') {
+    const node = h('i', { class: cls });
+    node.style.background = series.color;
+    return node;
+  }
 
   function statusLine(level, text) {
     const node = h('div', { class: `status ${level}` });
@@ -506,46 +535,63 @@
       body.append(statusLine('warn', `마지막 수집이 ${Math.round((now - asOf) / HOUR)}시간 전입니다. 저장소의 Actions에서 수집이 멈췄는지 확인하세요.`));
     }
 
-    /* ---- 이번 주 ---- */
+    /* ---- 이번 주: 전체 모델과 Fable ---- */
     const reset = last.seven_day_resets_at ? new Date(last.seven_day_resets_at) : null;
+    const limits = [
+      { ...SERIES[0], used: last.seven_day_pct },
+      { ...SERIES[1], used: last.fable_week_pct == null ? null : last.fable_week_pct },
+    ];
     const weekBlock = h('div');
     weekBlock.append(h('h3', { text: '이번 주' }));
     if (!reset || last.seven_day_pct == null) {
       weekBlock.append(h('p', { class: 'note', text: '주간 사용률이 이번 수집에는 실려 오지 않았습니다.' }));
     } else if (now >= reset) {
-      weekBlock.append(h('p', { class: 'note', text: `주간 한도가 ${whenText(reset)}에 리셋됐습니다. 지난주는 ${pct(last.seven_day_pct)}로 마감했고, 새 값은 다음 수집 때 표시됩니다.` }));
+      const closing = limits.filter((l) => l.used != null).map((l) => `${l.name} ${pct(l.used)}`).join(', ');
+      weekBlock.append(h('p', { class: 'note', text: `주간 한도가 ${whenText(reset)}에 리셋됐습니다. 지난주는 ${closing}로 마감했고, 새 값은 다음 수집 때 표시됩니다.` }));
     } else {
       const start = reset - WEEK;
-      const used = last.seven_day_pct;
       const elapsedNow = clamp((now - start) / WEEK, 0, 1);
       const elapsedRead = clamp((asOf - start) / WEEK, 0, 1);
-      const gap = used - elapsedRead * 100;
-      const verdict = elapsedRead < 0.05 ? '이번 주가 막 시작됐습니다'
-        : gap <= -5 ? '시간보다 덜 쓰는 중'
-        : gap >= 5 ? '시간보다 빨리 쓰는 중'
-        : '시간과 비슷한 속도';
-      weekBlock.append(h('div', { class: 'week-figure' }, h('span', { class: 'hero', text: pct(used) }), h('span', { class: 'verdict', text: verdict })));
-      const level = severity(used);
-      if (level) weekBlock.append(statusLine(level, level === 'crit' ? '주간 한도에 거의 닿았습니다' : '주간 한도의 80%를 넘었습니다'));
-
-      const fill = h('div', { class: `ruler-fill ${level}` });
-      const ruler = h('div', { class: 'ruler', role: 'img', 'aria-label': `주간 한도 ${pct(used)} 사용, 한 주의 ${pct(elapsedNow * 100)} 경과` },
-        h('span', { class: 'now-label', style: `left:${clamp(elapsedNow * 100, 4, 96)}%`, text: '지금' }),
-        h('div', { class: 'ruler-track' }, fill),
-        h('div', { class: 'now', style: `left:${elapsedNow * 100}%` }));
-      weekBlock.append(ruler);
-      const days = h('div', { class: 'days', 'aria-hidden': 'true' });
       const todayIndex = Math.floor((now - start) / DAY);
-      for (let i = 0; i < 7; i++) days.append(h('span', { class: i === todayIndex ? 'today' : '', text: weekdayShort(new Date(start + i * DAY)) }));
-      weekBlock.append(days);
-      setFill(fill, used);
-
-      let outlook = `${whenText(reset)}에 리셋됩니다.`;
-      if (elapsedRead >= 0.1) {
-        const projected = used / elapsedRead;
-        outlook += projected > 100 ? ' 이 속도면 리셋 전에 한도에 닿습니다.' : ` 이 속도면 그때 약 ${pct(projected)}입니다.`;
+      let first = true;
+      for (const l of limits) {
+        if (l.used == null) {
+          weekBlock.append(h('p', { class: 'note', text: `${l.name} 한도는 이번 수집에 실려 오지 않았습니다.` }));
+          continue;
+        }
+        const level = severity(l.used);
+        const fill = h('div', { class: `ruler-fill ${level}` });
+        if (!level) fill.style.background = l.color;
+        const track = h('div', { class: 'ruler-track' }, fill);
+        track.style.background = l.track;
+        const ruler = h('div', { class: 'ruler' + (first ? ' first' : ''), role: 'img', 'aria-label': `${l.name} 주간 한도 ${pct(l.used)} 사용, 한 주의 ${pct(elapsedNow * 100)} 경과` },
+          first ? h('span', { class: 'now-label', style: `left:${clamp(elapsedNow * 100, 4, 96)}%`, text: '지금' }) : null,
+          track,
+          h('div', { class: 'now', style: `left:${elapsedNow * 100}%` }));
+        const row = h('div', { class: 'limit' },
+          h('div', { class: 'limit-head' }, h('span', { class: 'limit-name' }, swatch(l), l.name), h('span', { class: 'limit-value', text: pct(l.used) })),
+          ruler);
+        if (first) {
+          const days = h('div', { class: 'days', 'aria-hidden': 'true' });
+          for (let i = 0; i < 7; i++) days.append(h('span', { class: i === todayIndex ? 'today' : '', text: weekdayShort(new Date(start + i * DAY)) }));
+          row.append(days);
+        }
+        const gap = l.used - elapsedRead * 100;
+        let line = elapsedRead < 0.05 ? '이번 주가 막 시작됐습니다.'
+          : gap <= -5 ? '시간보다 덜 쓰는 중.'
+          : gap >= 5 ? '시간보다 빨리 쓰는 중.'
+          : '시간과 비슷한 속도.';
+        if (elapsedRead >= 0.1) {
+          const projected = l.used / elapsedRead;
+          line += projected > 100 ? ' 이 속도면 리셋 전에 한도에 닿습니다.' : ` 이 속도면 리셋 때 약 ${pct(projected)}.`;
+        }
+        row.append(h('p', { class: 'limit-note', text: line }));
+        if (level) row.append(statusLine(level, level === 'crit' ? `${l.name} 주간 한도에 거의 닿았습니다` : `${l.name} 주간 한도의 80%를 넘었습니다`));
+        weekBlock.append(row);
+        setFill(fill, l.used);
+        first = false;
       }
-      weekBlock.append(h('p', { class: 'note', text: outlook }));
+      weekBlock.append(h('p', { class: 'note', text: `${whenText(reset)}에 리셋됩니다.` }));
     }
     body.append(weekBlock);
 
@@ -570,20 +616,22 @@
     /* ---- 이번 주 추이 ---- */
     if (reset && now < reset) {
       const points = usage.filter((r) => r.seven_day_resets_at && r.seven_day_pct != null && sameWeek(r.seven_day_resets_at, reset))
-        .map((r) => ({ t: +new Date(r.t), v: r.seven_day_pct, s: r.five_hour_pct }));
+        .map((r) => ({ t: +new Date(r.t), all: r.seven_day_pct, fable: r.fable_week_pct == null ? null : r.fable_week_pct, s: r.five_hour_pct }));
+      const shown = SERIES.filter((sr) => points.some((p) => p[sr.key] != null));
+      const legend = h('div', { class: 'legend' });
+      for (const sr of shown) legend.append(h('span', {}, swatch(sr, 'key-line'), sr.name));
+      legend.append(h('span', {}, h('i', { class: 'key-line pace' }), '고르게 쓸 때'));
       const block = h('div', { class: 'chart-block' });
-      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '이번 주 추이' }),
-        h('div', { class: 'legend' },
-          h('span', {}, h('i', { class: 'key-line' }), '주간 사용률'),
-          h('span', {}, h('i', { class: 'key-line pace' }), '고르게 쓸 때'))));
+      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '이번 주 추이' }), legend));
       const host = h('div', { class: 'chart' });
       block.append(host);
+      const cell = (v) => (v == null ? '–' : pct(v));
       const table = h('table');
-      table.append(h('thead', {}, h('tr', {}, h('th', { text: '수집 시각' }), h('th', { text: '주간' }), h('th', { text: '세션' }))));
+      table.append(h('thead', {}, h('tr', {}, h('th', { text: '수집 시각' }), h('th', { text: '전체' }), h('th', { text: 'Fable' }), h('th', { text: '세션' }))));
       const tbody = h('tbody');
       for (const p of [...points].reverse().slice(0, 40)) {
         const d = new Date(p.t);
-        tbody.append(h('tr', {}, h('td', { text: `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}` }), h('td', { text: pct(p.v) }), h('td', { text: p.s == null ? '–' : pct(p.s) })));
+        tbody.append(h('tr', {}, h('td', { text: `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}` }), h('td', { text: cell(p.all) }), h('td', { text: cell(p.fable) }), h('td', { text: cell(p.s) })));
       }
       table.append(tbody);
       block.append(h('details', {}, h('summary', { text: '수집 기록 표로 보기' }), table));
@@ -593,27 +641,31 @@
 
     /* ---- 주별 사용량 ---- */
     // 좁은 화면에서는 날짜 표기가 겹치지 않을 만큼만 보여 준다.
-    const fit = clamp(Math.floor((body.clientWidth - 50) / 44), 4, 8);
+    const fit = clamp(Math.floor((body.clientWidth - 50) / 46), 4, 8);
     const weeks = (weekly || []).filter((w) => w.week_resets_at && w.used_pct != null).slice(-fit);
     const block = h('div', { class: 'chart-block' });
     const closed = weeks.filter((w) => new Date(w.week_resets_at) <= now);
     if (weeks.length >= 2) {
-      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '주별 사용량' }),
-        h('div', { class: 'legend' },
-          h('span', {}, h('i', { class: 'key-box' }), '마감한 주'),
-          h('span', {}, h('i', { class: 'key-box open' }), '진행 중'))));
+      const shown = SERIES.filter((sr) => sr.key === 'all' || weeks.some((w) => w.fable_used_pct != null));
+      const legend = h('div', { class: 'legend' });
+      for (const sr of shown) legend.append(h('span', {}, swatch(sr), sr.name));
+      block.append(h('div', { class: 'chart-head' }, h('h3', { text: '주별 사용량' }), legend));
       const host = h('div', { class: 'chart' });
       block.append(host);
       if (closed.length) {
-        const avg = closed.reduce((sum, w) => sum + w.used_pct, 0) / closed.length;
-        block.append(h('p', { class: 'note', text: `마감한 ${closed.length}주 평균은 ${pct(avg)}입니다.` }));
+        const mean = (list) => list.reduce((sum, v) => sum + v, 0) / list.length;
+        const fableDone = closed.filter((w) => w.fable_used_pct != null).map((w) => w.fable_used_pct);
+        let text = `마감한 ${closed.length}주 평균은 전체 모델 ${pct(mean(closed.map((w) => w.used_pct)))}`;
+        text += fableDone.length ? `, Fable ${pct(mean(fableDone))}입니다.` : '입니다.';
+        block.append(h('p', { class: 'note', text }));
       }
       const table = h('table');
-      table.append(h('thead', {}, h('tr', {}, h('th', { text: '주 시작' }), h('th', { text: '사용률' }), h('th', { text: '상태' }))));
+      table.append(h('thead', {}, h('tr', {}, h('th', { text: '주 시작' }), h('th', { text: '전체' }), h('th', { text: 'Fable' }), h('th', { text: '상태' }))));
       const tbody = h('tbody');
       for (const w of [...weeks].reverse()) {
         const r = new Date(w.week_resets_at), st = new Date(r - WEEK);
-        tbody.append(h('tr', {}, h('td', { text: `${mmdd(st)} ${weekdayShort(st)}` }), h('td', { text: pct(w.used_pct) }), h('td', { text: r <= now ? '마감' : '진행 중' })));
+        tbody.append(h('tr', {}, h('td', { text: `${mmdd(st)} ${weekdayShort(st)}` }), h('td', { text: pct(w.used_pct) }),
+          h('td', { text: w.fable_used_pct == null ? '–' : pct(w.fable_used_pct) }), h('td', { text: r <= now ? '마감' : '진행 중' })));
       }
       table.append(tbody);
       block.append(h('details', {}, h('summary', { text: '주별 기록 표로 보기' }), table));
@@ -640,10 +692,12 @@
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const x = (t) => m.l + clamp((t - start) / (end - start), 0, 1) * iw;
     const y = (v) => m.t + (1 - clamp(v, 0, 100) / 100) * ih;
-    const lastPoint = points[points.length - 1];
+    const series = SERIES.map((sr) => ({ ...sr, pts: points.filter((p) => p[sr.key] != null).map((p) => ({ t: p.t, v: p[sr.key] })) }))
+      .filter((sr) => sr.pts.length);
+    const latest = series.map((sr) => `${sr.name} ${pct(sr.pts[sr.pts.length - 1].v)}`).join(', ');
     const svg = s('svg', {
       viewBox: `0 0 ${W} ${H}`, height: H, tabindex: '0', role: 'img',
-      'aria-label': lastPoint ? `이번 주 주간 사용률 추이. 가장 최근 값 ${pct(lastPoint.v)}. 좌우 화살표로 수집 시각별 값을 읽을 수 있습니다.` : '이번 주 주간 사용률 추이. 아직 값이 없습니다.',
+      'aria-label': latest ? `이번 주 주간 사용률 추이. 가장 최근 값은 ${latest}. 좌우 화살표로 수집 시각별 값을 읽을 수 있습니다.` : '이번 주 주간 사용률 추이. 아직 값이 없습니다.',
     });
     for (const v of [0, 50, 100]) {
       svg.append(s('line', { class: v === 0 ? 'axis' : 'grid', x1: m.l, x2: W - m.r, y1: y(v), y2: y(v) }));
@@ -655,17 +709,33 @@
       if (i < 7) svg.append(s('text', { class: 'tick-text', x: px + iw / 14, y: H - 6, 'text-anchor': 'middle' }, weekdayShort(new Date(start + i * DAY))));
     }
     svg.append(s('line', { class: 'pace-line', x1: x(start), y1: y(0), x2: x(end), y2: y(100) }));
-    if (points.length > 1) svg.append(s('path', { class: 'use-line', d: points.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('') }));
+    for (const sr of series) {
+      if (sr.pts.length > 1) {
+        const path = s('path', { class: 'use-line', d: sr.pts.map((p, i) => `${i ? 'L' : 'M'}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join('') });
+        path.style.stroke = sr.color;
+        svg.append(path);
+      }
+    }
     const cross = s('line', { class: 'cross', y1: m.t, y2: y(0), visibility: 'hidden' });
     svg.append(cross);
-    if (lastPoint) {
-      const px = x(lastPoint.t), py = y(lastPoint.v);
-      svg.append(s('circle', { class: 'use-dot', cx: px, cy: py, r: 5 }));
-      const roomRight = px + 44 <= W;
-      svg.append(s('text', { class: 'value-text', x: roomRight ? px + 9 : px - 9, y: py - 8, 'text-anchor': roomRight ? 'start' : 'end' }, pct(lastPoint.v)));
-    }
-    const probe = s('circle', { class: 'use-dot', r: 5, visibility: 'hidden' });
-    svg.append(probe);
+    // 끝점과 값. 두 값이 가까우면 위쪽 선의 값은 점 위에, 아래쪽 선의 값은 점 아래에 둔다.
+    const ends = series.map((sr) => { const p = sr.pts[sr.pts.length - 1]; return { sr, px: x(p.t), py: y(p.v), v: p.v }; })
+      .sort((a, b) => a.py - b.py);
+    const close = ends.length === 2 && Math.abs(ends[0].py - ends[1].py) < 18;
+    ends.forEach((e, i) => {
+      const dot = s('circle', { class: 'use-dot', cx: e.px, cy: e.py, r: 5 });
+      dot.style.fill = e.sr.color;
+      svg.append(dot);
+      const roomRight = e.px + 44 <= W;
+      const below = close && i === 1;
+      svg.append(s('text', { class: 'value-text', x: roomRight ? e.px + 9 : e.px - 9, y: below ? e.py + 17 : e.py - 8, 'text-anchor': roomRight ? 'start' : 'end' }, pct(e.v)));
+    });
+    const probes = series.map((sr) => {
+      const probe = s('circle', { class: 'use-dot', r: 5, visibility: 'hidden' });
+      probe.style.fill = sr.color;
+      svg.append(probe);
+      return probe;
+    });
     host.append(svg);
 
     if (!points.length) return;
@@ -673,13 +743,26 @@
     let active = -1;
     function show(i) {
       active = clamp(i, 0, points.length - 1);
-      const p = points[active], px = x(p.t), py = y(p.v), d = new Date(p.t);
+      const p = points[active], px = x(p.t), d = new Date(p.t);
       cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
-      probe.setAttribute('cx', px); probe.setAttribute('cy', py); probe.setAttribute('visibility', 'visible');
+      const rows = [];
+      let top = y(0);
+      series.forEach((sr, k) => {
+        const v = p[sr.key];
+        if (v == null) { probes[k].setAttribute('visibility', 'hidden'); return; }
+        probes[k].setAttribute('cx', px); probes[k].setAttribute('cy', y(v)); probes[k].setAttribute('visibility', 'visible');
+        rows.push({ color: sr.color, value: pct(v), name: sr.name });
+        top = Math.min(top, y(v));
+      });
       const paceAt = clamp((p.t - start) / (end - start), 0, 1) * 100;
-      tip.show(px, py, pct(p.v), `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}, 고르게 쓰면 ${pct(paceAt)}`);
+      tip.show(px, top, rows, `${mmdd(d)} ${weekdayShort(d)} ${hhmm(d)}, 고르게 쓰면 ${pct(paceAt)}`);
     }
-    function hide() { active = -1; cross.setAttribute('visibility', 'hidden'); probe.setAttribute('visibility', 'hidden'); tip.hide(); }
+    function hide() {
+      active = -1;
+      cross.setAttribute('visibility', 'hidden');
+      probes.forEach((probe) => probe.setAttribute('visibility', 'hidden'));
+      tip.hide();
+    }
     function nearest(e) {
       const rect = svg.getBoundingClientRect();
       const px = (e.clientX - rect.left) * (W / rect.width);
@@ -704,7 +787,7 @@
     const m = { l: 42, r: 8, t: 22, b: 26 };
     const iw = W - m.l - m.r, ih = H - m.t - m.b;
     const band = iw / weeks.length;
-    const barW = Math.min(24, band - 2);
+    const barW = clamp((band - 14) / 2, 6, 14);
     const y = (v) => m.t + (1 - clamp(v, 0, 100) / 100) * ih;
     const svg = s('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'group', 'aria-label': '주별 주간 한도 사용률' });
     for (const v of [0, 50, 100]) {
@@ -713,24 +796,30 @@
     }
     host.append(svg);
     const tip = makeTip(host);
+    const base = y(0);
     weeks.forEach((w, i) => {
       const reset = new Date(w.week_resets_at), start = new Date(reset - WEEK);
       const open = reset > now;
       const cx = m.l + band * i + band / 2;
-      const top = y(w.used_pct), height = Math.max(0, y(0) - top);
-      const r = Math.min(4, height);
-      const left = cx - barW / 2, right = cx + barW / 2, base = y(0);
-      if (height > 0) {
-        svg.append(s('path', {
-          class: 'bar' + (open ? ' open' : ''),
-          d: `M${left},${base}V${top + r}Q${left},${top} ${left + r},${top}H${right - r}Q${right},${top} ${right},${top + r}V${base}Z`,
-        }));
+      const values = SERIES.map((sr) => ({ sr, v: sr.key === 'all' ? w.used_pct : w.fable_used_pct })).filter((o) => o.v != null);
+      let left = cx - (values.length * barW + (values.length - 1) * 2) / 2;
+      let top = base;
+      for (const o of values) {
+        const barTop = y(o.v), height = Math.max(0, base - barTop), r = Math.min(4, height, barW / 2), right = left + barW;
+        if (height > 0) {
+          const path = s('path', { class: 'bar', d: `M${left},${base}V${barTop + r}Q${left},${barTop} ${left + r},${barTop}H${right - r}Q${right},${barTop} ${right},${barTop + r}V${base}Z` });
+          path.style.fill = o.sr.color;
+          svg.append(path);
+        }
+        top = Math.min(top, barTop);
+        left = right + 2;
       }
-      svg.append(s('text', { class: 'value-text', x: cx, y: top - 6, 'text-anchor': 'middle' }, pct(w.used_pct)));
-      svg.append(s('text', { class: 'tick-text', x: cx, y: H - 6, 'text-anchor': 'middle' }, mmdd(start)));
+      svg.append(s('text', { class: 'tick-text', x: cx, y: H - 6, 'text-anchor': 'middle' }, open ? '이번 주' : mmdd(start)));
       const label = `${mmdd(start)} ${weekdayShort(start)}에 시작한 주, ${open ? '진행 중' : '마감'}, 기록 ${w.samples}회`;
-      const hit = s('rect', { class: 'bar-hit', x: cx - band / 2, y: m.t, width: band, height: ih, tabindex: '0', role: 'img', 'aria-label': `${label}, ${pct(w.used_pct)}` });
-      const show = () => tip.show(cx, top, pct(w.used_pct), label);
+      const rows = values.map((o) => ({ color: o.sr.color, value: pct(o.v), name: o.sr.name }));
+      const spoken = values.map((o) => `${o.sr.name} ${pct(o.v)}`).join(', ');
+      const hit = s('rect', { class: 'bar-hit', x: cx - band / 2, y: m.t, width: band, height: ih, tabindex: '0', role: 'img', 'aria-label': `${label}, ${spoken}` });
+      const show = () => tip.show(cx, top, rows, label);
       hit.addEventListener('pointerenter', show);
       hit.addEventListener('pointerdown', show);
       hit.addEventListener('click', show);
