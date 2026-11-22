@@ -140,5 +140,14 @@
   "seven_day_resets_at": "2026-11-23T06:00+09:00",
   "fable_week_pct": 98.0,
   "fable_week_resets_at": "2026-11-23T06:00+09:00"
+ },
+ {
+  "t": "2026-11-22T21:06+09:00",
+  "five_hour_pct": 0,
+  "five_hour_resets_at": "2026-11-23T00:50+09:00",
+  "seven_day_pct": 59.0,
+  "seven_day_resets_at": "2026-11-23T06:00+09:00",
+  "fable_week_pct": 98.0,
+  "fable_week_resets_at": "2026-11-23T06:00+09:00"
  }
 ]
