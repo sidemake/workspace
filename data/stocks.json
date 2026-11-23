@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-24T08:52+09:00",
+ "updated": "2026-11-24T08:55+09:00",
  "items": [
   {
    "code": "100220",
@@ -8,7 +8,7 @@
    "price": 4850,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:43+09:00",
+   "traded_at": "2026-11-24T08:55:37+09:00",
    "status": "PREOPEN",
    "source": "naver"
   },
@@ -19,7 +19,7 @@
    "price": 177500,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:44+09:00",
+   "traded_at": "2026-11-24T08:55:37+09:00",
    "status": "PREOPEN",
    "source": "naver"
   },
@@ -30,7 +30,7 @@
    "price": 1085000,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:45+09:00",
+   "traded_at": "2026-11-24T08:55:38+09:00",
    "status": "PREOPEN",
    "source": "naver"
   },
@@ -41,7 +41,7 @@
    "price": 2690,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:45+09:00",
+   "traded_at": "2026-11-24T08:55:38+09:00",
    "status": "PREOPEN",
    "source": "naver"
   },
@@ -52,7 +52,7 @@
    "price": 4695,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:46+09:00",
+   "traded_at": "2026-11-24T08:55:39+09:00",
    "status": "PREOPEN",
    "source": "naver"
   },
@@ -63,7 +63,7 @@
    "price": 40450,
    "change": 0,
    "change_pct": 0.0,
-   "traded_at": "2026-11-24T08:52:47+09:00",
+   "traded_at": "2026-11-24T08:55:40+09:00",
    "status": "PREOPEN",
    "source": "naver"
   }
