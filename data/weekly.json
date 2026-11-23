@@ -8,9 +8,9 @@
  },
  {
   "week_resets_at": "2026-11-30T06:00+09:00",
-  "used_pct": 2.0,
-  "fable_used_pct": 0,
-  "samples": 7,
-  "last_recorded": "2026-11-24T05:00+09:00"
+  "used_pct": 5.0,
+  "fable_used_pct": 5.0,
+  "samples": 8,
+  "last_recorded": "2026-11-24T08:52+09:00"
  }
 ]
