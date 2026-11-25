@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-25T18:14+09:00",
+ "updated": "2026-11-25T18:25+09:00",
  "items": [
   {
    "code": "100220",
@@ -8,7 +8,7 @@
    "price": 4815,
    "change": -95,
    "change_pct": -1.93,
-   "traded_at": "2026-11-25T18:14:22+09:00",
+   "traded_at": "2026-11-25T18:24:22+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -19,7 +19,7 @@
    "price": 169100,
    "change": -20300,
    "change_pct": -10.72,
-   "traded_at": "2026-11-25T18:14:23+09:00",
+   "traded_at": "2026-11-25T18:24:23+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -27,10 +27,10 @@
    "code": "000660",
    "name": "SK하이닉스",
    "market": "KOSPI",
-   "price": 1017000,
-   "change": -141000,
-   "change_pct": -12.18,
-   "traded_at": "2026-11-25T18:14:23+09:00",
+   "price": 1015000,
+   "change": -143000,
+   "change_pct": -12.35,
+   "traded_at": "2026-11-25T18:24:24+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -41,7 +41,7 @@
    "price": 2780,
    "change": 45,
    "change_pct": 1.65,
-   "traded_at": "2026-11-25T18:14:21+09:00",
+   "traded_at": "2026-11-25T18:06:07+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -52,7 +52,7 @@
    "price": 4355,
    "change": -170,
    "change_pct": -3.76,
-   "traded_at": "2026-11-25T18:14:19+09:00",
+   "traded_at": "2026-11-25T18:24:59+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -60,10 +60,10 @@
    "code": "189300",
    "name": "인텔리안테크",
    "market": "KOSDAQ",
-   "price": 43100,
-   "change": -1650,
-   "change_pct": -3.69,
-   "traded_at": "2026-11-25T18:14:22+09:00",
+   "price": 43250,
+   "change": -1500,
+   "change_pct": -3.35,
+   "traded_at": "2026-11-25T18:23:05+09:00",
    "status": "OPEN",
    "source": "naver"
   }
