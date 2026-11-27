@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T16:19+09:00",
+ "updated": "2026-11-27T16:29+09:00",
  "items": [
   {
    "code": "100220",
@@ -8,7 +8,7 @@
    "price": 5010,
    "change": 95,
    "change_pct": 1.93,
-   "traded_at": "2026-11-27T16:19:23+09:00",
+   "traded_at": "2026-11-27T16:09:56+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -16,10 +16,10 @@
    "code": "005930",
    "name": "삼성전자",
    "market": "KOSPI",
-   "price": 178200,
-   "change": 6900,
-   "change_pct": 4.03,
-   "traded_at": "2026-11-27T16:19:22+09:00",
+   "price": 177900,
+   "change": 6600,
+   "change_pct": 3.85,
+   "traded_at": "2026-11-27T16:29:24+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -27,10 +27,10 @@
    "code": "000660",
    "name": "SK하이닉스",
    "market": "KOSPI",
-   "price": 1098000,
-   "change": 45000,
-   "change_pct": 4.27,
-   "traded_at": "2026-11-27T16:19:23+09:00",
+   "price": 1099000,
+   "change": 46000,
+   "change_pct": 4.37,
+   "traded_at": "2026-11-27T16:29:22+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -38,10 +38,10 @@
    "code": "032620",
    "name": "GC메디아이",
    "market": "KOSDAQ",
-   "price": 2880,
-   "change": 60,
-   "change_pct": 2.13,
-   "traded_at": "2026-11-27T16:19:20+09:00",
+   "price": 2875,
+   "change": 55,
+   "change_pct": 1.95,
+   "traded_at": "2026-11-27T16:29:22+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -52,7 +52,7 @@
    "price": 4400,
    "change": 15,
    "change_pct": 0.34,
-   "traded_at": "2026-11-27T16:19:21+09:00",
+   "traded_at": "2026-11-27T16:29:21+09:00",
    "status": "OPEN",
    "source": "naver"
   },
@@ -60,10 +60,10 @@
    "code": "189300",
    "name": "인텔리안테크",
    "market": "KOSDAQ",
-   "price": 54700,
-   "change": 8600,
-   "change_pct": 18.66,
-   "traded_at": "2026-11-27T16:19:22+09:00",
+   "price": 54600,
+   "change": 8500,
+   "change_pct": 18.44,
+   "traded_at": "2026-11-27T16:29:23+09:00",
    "status": "OPEN",
    "source": "naver"
   }
